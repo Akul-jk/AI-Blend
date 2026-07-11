@@ -1,0 +1,7 @@
+# Dependency directories
+node_modules/
+dist/
+database.sqlite
+.env
+*.log
+.DS_Store
