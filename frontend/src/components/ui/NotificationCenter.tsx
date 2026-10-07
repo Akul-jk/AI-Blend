@@ -2,13 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bell, AlertOctagon, CheckCircle2, WifiOff } from 'lucide-react';
 import { useAlertStore } from '../../stores/alertStore';
 import { useSensorStore } from '../../stores/sensorStore';
-import api from '../../services/api';
 import { toast } from './Toast';
 
 export const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const { alerts, resolveAlert } = useAlertStore();
   const { socketConnected } = useSensorStore();
 
@@ -42,7 +41,7 @@ export const NotificationCenter: React.FC = () => {
         className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
       >
         <Bell className="w-4 h-4" />
-        
+
         {/* Unread badge dot */}
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -56,7 +55,7 @@ export const NotificationCenter: React.FC = () => {
           <div className="p-4 border-b border-slate-900/80 flex items-center justify-between">
             <span className="font-bold text-xs text-slate-200 uppercase tracking-wider">Alarms & Notifications</span>
             {unreadCount > 0 && (
-              <button 
+              <button
                 onClick={handleResolveAll}
                 className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold"
               >
@@ -86,19 +85,19 @@ export const NotificationCenter: React.FC = () => {
               </div>
             ) : (
               alerts.map(a => (
-                <div 
-                  key={a.id} 
+                <div
+                  key={a.id}
                   className={`p-3.5 flex items-start gap-3 transition-colors ${
-                    a.resolved 
-                      ? 'bg-slate-950/20 text-slate-500' 
+                    a.resolved
+                      ? 'bg-slate-950/20 text-slate-500'
                       : a.severity === 'critical'
                         ? 'bg-red-500/5 hover:bg-red-500/10 text-red-200'
                         : 'bg-amber-500/5 hover:bg-amber-500/10 text-amber-200'
                   }`}
                 >
                   <AlertOctagon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                    a.resolved 
-                      ? 'text-slate-700' 
+                    a.resolved
+                      ? 'text-slate-700'
                       : a.severity === 'critical'
                         ? 'text-red-400'
                         : 'text-amber-400'

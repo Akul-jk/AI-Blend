@@ -5,3 +5,57 @@ database.sqlite
 .env
 *.log
 .DS_Store
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python environments
+.venv/
+venv/
+env/
+**/.venv/
+**/venv/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+.tmp/
+**/.tmp/
+*.tmp
+*.cache
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ML generated/legacy artifacts
+ml-service/datasets/simulation/synthetic_telemetry.csv
+ml-service/models/simulation/lstm_model.keras
+ml-service/models/simulation/scaler.pkl

@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAlertStore } from '../../stores/alertStore';
 import api from '../../services/api';
-import socketService from '../../services/socket';
+import { socketService } from '../../services/socket';
 import { toast } from '../../components/ui/Toast';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  Trash2, 
-  Clock, 
-  ShieldCheck,
+import {
+  AlertTriangle,
+  CheckCircle,
+  Trash2,
+  Clock,
   AlertCircle
 } from 'lucide-react';
 
@@ -33,7 +32,7 @@ export const AlertsView: React.FC = () => {
     const handleLiveAlert = (newAlert: any) => {
       addAlert(newAlert);
     };
-    
+
     const handleAlertUpdate = (data: { id: number; status: string }) => {
       if (data.status === 'resolved') {
         resolveAlert(Number(data.id));
@@ -79,7 +78,7 @@ export const AlertsView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      
+
       {/* Header */}
       <section className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -97,8 +96,8 @@ export const AlertsView: React.FC = () => {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                filter === f 
-                  ? 'bg-slate-800 text-slate-200 shadow-sm' 
+                filter === f
+                  ? 'bg-slate-800 text-slate-200 shadow-sm'
                   : 'text-slate-500 hover:text-slate-300'
               }`}
             >
@@ -120,8 +119,8 @@ export const AlertsView: React.FC = () => {
               <div key={alert.id} className="relative group">
                 {/* Bullet circle */}
                 <span className={`absolute -left-9 top-1 w-6 h-6 rounded-full flex items-center justify-center border ${
-                  alert.resolved 
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                  alert.resolved
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                     : alert.severity === 'critical'
                     ? 'bg-red-500/10 border-red-500/20 text-red-400 animate-pulse'
                     : 'bg-amber-500/10 border-amber-500/20 text-amber-400'

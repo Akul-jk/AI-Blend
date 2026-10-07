@@ -8,6 +8,11 @@ export interface Sensor {
   unit: string;
   value: number;
   lastUpdated: string;
+  warningLow?: number | null;
+  warningHigh?: number | null;
+  criticalLow?: number | null;
+  criticalHigh?: number | null;
+  calibrationMultiplier?: number;
 }
 
 export interface SensorHistoryPoint {
@@ -36,7 +41,7 @@ export const useSensorStore = create<SensorState>((set) => ({
   updateSensors: (updatedSensors) => set((state) => {
     // Map existing sensors by ID for performance
     const sensorMap = new Map(state.sensors.map(s => [s.id, s]));
-    
+
     updatedSensors.forEach(updated => {
       const existing = sensorMap.get(updated.id);
       if (existing) {

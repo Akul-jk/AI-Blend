@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { toast } from '../../components/ui/Toast';
-import { 
-  Brain, 
-  Cpu, 
-  Database, 
-  Activity, 
-  Clock, 
-  CheckCircle2, 
-  AlertTriangle,
+import {
+  Brain,
+  Database,
+  Activity,
+  Clock,
+  CheckCircle2,
   Server,
   Code2
 } from 'lucide-react';
@@ -60,7 +58,7 @@ export const AIOverviewView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      
+
       {/* Welcome Banner */}
       <section className="glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-violet-500/10 via-emerald-500/5 to-transparent rounded-full blur-3xl -z-10"></div>
@@ -91,7 +89,7 @@ export const AIOverviewView: React.FC = () => {
 
       {/* Main Grid: Deployments & Logs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Model Pipeline List */}
         <div className="lg:col-span-2 glass-panel rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
@@ -134,7 +132,7 @@ export const AIOverviewView: React.FC = () => {
                       </td>
                       <td className="py-3.5">
                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${
-                          model.status === 'completed' 
+                          model.status === 'completed'
                             ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-400'
                             : model.status === 'training'
                             ? 'bg-amber-500/5 border-amber-500/10 text-amber-400 animate-pulse'
@@ -158,7 +156,7 @@ export const AIOverviewView: React.FC = () => {
         <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-5">ML Estimator Health</span>
-            
+
             <div className="space-y-4">
               {[
                 { label: 'Active Deployment', value: 'LSTM-Forecaster-v2.4' },
@@ -175,7 +173,7 @@ export const AIOverviewView: React.FC = () => {
               ))}
             </div>
           </div>
-          
+
           <div className="mt-8 pt-4 border-t border-slate-900/60 flex items-center justify-between text-[9px] text-slate-600 font-mono">
             <div className="flex items-center gap-1">
               <Server className="w-3.5 h-3.5" />

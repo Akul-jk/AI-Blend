@@ -1,20 +1,12 @@
 import { create } from 'zustand';
-
-export interface Alert {
-  id: number;
-  sensorId: string;
-  deviceId: string;
-  type: string;
-  severity: 'warning' | 'critical';
-  message: string;
-  timestamp: string;
-  resolved: number; // 0 or 1
-}
+import type { Alert } from '../types';
+export type { Alert } from '../types';
 
 interface AlertState {
   alerts: Alert[];
   addAlert: (alert: Alert) => void;
   resolveAlert: (alertId: number) => void;
+  deleteAlert: (alertId: number) => void;
   setAlerts: (alerts: Alert[]) => void;
 }
 
@@ -26,7 +18,8 @@ export const useAlertStore = create<AlertState>((set) => ({
     return { alerts: [alert, ...state.alerts].slice(0, 100) }; // Keep top 100 alerts
   }),
   resolveAlert: (alertId) => set((state) => ({
-    alerts: state.alerts.map(a => a.id === alertId ? { ...a, resolved: 1 } : a)
+    alerts: state.alerts.map(a => a.id === alertId ? { ...a, resolved: true } : a)
   })),
+  deleteAlert: (alertId) => set((state) => ({ alerts: state.alerts.filter(a => a.id !== alertId) })),
   setAlerts: (alerts) => set({ alerts })
 }));

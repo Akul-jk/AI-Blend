@@ -1,115 +1,73 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 class SocketService {
   private socket: Socket | null = null;
-  private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
+  private isConnecting: boolean = false;
   private statusListeners: Set<(connected: boolean) => void> = new Set();
-  public isConnected = false;
 
-  constructor() {
-    // Lazy initialize on first connect call
+  get isConnected() {
+    return this.socket?.connected ?? false;
   }
 
-  public connect() {
-    if (this.socket) return;
+  connect() {
+    if (this.socket?.connected || this.isConnecting) return;
+    this.socket?.disconnect();
+    this.isConnecting = true;
 
-    console.log('Connecting to WebSocket server at:', SOCKET_URL);
     this.socket = io(SOCKET_URL, {
-      reconnection: true,
-      reconnectionAttempts: Infinity,
+      path: '/socket.io',
+      auth: { token: localStorage.getItem('token') },
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
+      reconnection: true,
+      reconnectionAttempts: 10,
     });
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected successfully');
-      this.isConnected = true;
-      this.notifyStatus(true);
+      this.isConnecting = false;
+      console.log('Socket connected');
+      this.statusListeners.forEach(cb => cb(true));
     });
 
-    this.socket.on('disconnect', (reason) => {
-      console.warn('WebSocket disconnected:', reason);
-      this.isConnected = false;
-      this.notifyStatus(false);
+    this.socket.on('disconnect', () => {
+      this.isConnecting = false;
+      console.log('Socket disconnected');
+      this.statusListeners.forEach(cb => cb(false));
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
-      this.isConnected = false;
-      this.notifyStatus(false);
+    this.socket.on('connect_error', () => {
+      this.isConnecting = false;
+      this.statusListeners.forEach(cb => cb(false));
     });
-
-    // Setup global listeners that were registered prior to connection
-    for (const [event, callbacks] of this.listeners.entries()) {
-      for (const callback of callbacks) {
-        this.socket.on(event, callback);
-      }
-    }
   }
 
-  public disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-      this.notifyStatus(false);
-    }
-  }
-
-  public on(event: string, callback: (...args: any[]) => void) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    this.listeners.get(event)!.add(callback);
-
-    if (this.socket) {
-      this.socket.on(event, callback);
-    }
-  }
-
-  public off(event: string, callback: (...args: any[]) => void) {
-    const callbacks = this.listeners.get(event);
-    if (callbacks) {
-      callbacks.delete(callback);
-      if (callbacks.size === 0) {
-        this.listeners.delete(event);
-      }
-    }
-
-    if (this.socket) {
-      this.socket.off(event, callback);
-    }
-  }
-
-  public onStatusChange(callback: (connected: boolean) => void) {
+  onStatusChange(callback: (connected: boolean) => void) {
     this.statusListeners.add(callback);
-    callback(this.isConnected);
+    if (this.socket) {
+      callback(this.socket.connected);
+    } else {
+      callback(false);
+    }
     return () => {
       this.statusListeners.delete(callback);
     };
   }
 
-  private notifyStatus(connected: boolean) {
-    for (const callback of this.statusListeners) {
-      try {
-        callback(connected);
-      } catch (err) {
-        console.error('Error executing connection status listener:', err);
-      }
-    }
+  on(event: string, callback: (...args: any[]) => void) {
+    this.socket?.on(event, callback);
+    return () => this.socket?.off(event, callback);
   }
 
-  public emit(event: string, ...args: any[]) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit(event, ...args);
-    } else {
-      console.warn(`Cannot emit "${event}", socket not connected.`);
-    }
+  off(event: string, callback?: (...args: any[]) => void) {
+    if (callback) this.socket?.off(event, callback);
+    else this.socket?.off(event);
+  }
+
+  disconnect() {
+    this.socket?.disconnect();
+    this.socket = null;
   }
 }
 
-const socketService = new SocketService();
-export default socketService;
+export const socketService = new SocketService();

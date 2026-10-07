@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { AlertOctagon, RotateCcw } from 'lucide-react';
 
 interface Props {
@@ -37,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-6 border border-red-500/20">
               <AlertOctagon className="w-8 h-8 animate-pulse" />
             </div>
-            
+
             <h1 className="text-2xl font-bold mb-2">Application Crash</h1>
             <p className="text-slate-400 text-sm mb-6">
               Antigravity's core system has caught an unhandled runtime error. The stack trace has been captured and logged in the dev console.

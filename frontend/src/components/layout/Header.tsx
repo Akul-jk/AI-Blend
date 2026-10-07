@@ -1,84 +1,54 @@
 import React from 'react';
-import { Menu, Sun, Moon, Wifi, WifiOff, Cpu, Database } from 'lucide-react';
-import { useThemeStore } from '../../stores/themeStore';
-import { useSensorStore } from '../../stores/sensorStore';
-import Breadcrumbs from '../ui/Breadcrumbs';
-import SearchBar from '../ui/SearchBar';
-import NotificationCenter from '../ui/NotificationCenter';
-import UserProfile from '../ui/UserProfile';
+import { Menu, Bell, Search, User } from 'lucide-react';
+import { useAppStore } from '../../stores/appStore';
+import { useTelemetryStore } from '../../stores/telemetryStore';
+import StatusBadge from '../glass/StatusBadge';
 
-interface HeaderProps {
-  onToggleSidebar: () => void;
-}
-
-export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const { theme, toggleTheme } = useThemeStore();
-  const { socketConnected } = useSensorStore();
+const Header: React.FC = () => {
+  const { toggleSidebar } = useAppStore();
+  const latestReadings = useTelemetryStore(state => state.latestReadings);
+  const hasReading = Object.keys(latestReadings).length > 0;
+  const hasHardware = Object.values(latestReadings).some(reading => reading.source === 'hardware');
 
   return (
-    <header className="h-14 border-b border-slate-900/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        {/* Mobile menu toggle */}
+    <header className="h-16 glass-standard border-b border-white/10 flex items-center justify-between px-4 sticky top-0 z-30">
+      <div className="flex items-center gap-4">
         <button
-          onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors lg:hidden"
-          title="Toggle Navigation"
+          onClick={toggleSidebar}
+          className="md:hidden p-2 rounded-lg hover:bg-white/10 text-slate-300"
         >
-          <Menu className="w-4 h-4" />
+          <Menu size={24} />
         </button>
 
-        {/* Dynamic breadcrumb path indicator */}
-        <Breadcrumbs />
+        <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400 font-medium">
+          <span>Smart Energy Monitor</span>
+          <span>/</span>
+          <span className="text-white">Dashboard</span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3.5">
-        {/* Search bar wrapper */}
-        <SearchBar />
-
-        {/* Global Status indicators */}
-        <div className="hidden sm:flex items-center gap-2.5 border-r border-slate-900 pr-3.5">
-          {/* ESP32 indicator */}
-          <div className="flex items-center gap-1" title="ESP32 Status">
-            <Cpu className={`w-3.5 h-3.5 ${socketConnected ? 'text-emerald-400' : 'text-red-400 animate-pulse'}`} />
-            <span className="text-[9px] font-mono text-slate-400">ESP32</span>
-            <span className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-          </div>
-
-          {/* Wi-Fi Status */}
-          <div className="flex items-center gap-1" title="Wi-Fi Status">
-            {socketConnected ? (
-              <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <WifiOff className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-            )}
-            <span className="text-[9px] font-mono text-slate-400">Wi-Fi</span>
-            <span className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-          </div>
-
-          {/* Database indicator */}
-          <div className="flex items-center gap-1" title="Database Health">
-            <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[9px] font-mono text-slate-400">DB</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          </div>
+      <div className="flex items-center gap-4">
+        <div className="relative hidden md:block">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-64 bg-white/5 border border-white/10 rounded-full pl-10 pr-4 py-1.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:bg-white/10 transition-all"
+          />
         </div>
 
-        {/* Theme Switcher Button */}
-        <button 
-          onClick={toggleTheme}
-          className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
-          title="Toggle Light/Dark Theme"
-        >
-          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        {hasReading ? <StatusBadge status={hasHardware ? 'hardware' : 'simulation'} label={hasHardware ? 'HARDWARE' : 'SIMULATION'} className="hidden sm:inline-flex" /> : <StatusBadge status="warning" label="NO TELEMETRY" className="hidden sm:inline-flex" />}
+
+        <button className="relative p-2 rounded-full hover:bg-white/10 text-slate-300 transition-colors">
+          <Bell size={20} />
         </button>
 
-        {/* Notification Center Bell dropdown */}
-        <NotificationCenter />
-
-        {/* User profile dropdown */}
-        <UserProfile />
+        <button className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center text-cyan-400 hover:bg-cyan-500/30 transition-colors">
+          <User size={16} />
+        </button>
       </div>
     </header>
   );
 };
+
 export default Header;

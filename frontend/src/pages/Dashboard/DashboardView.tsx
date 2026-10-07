@@ -2,22 +2,23 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSensorStore } from '../../stores/sensorStore';
 import { useDeviceStore } from '../../stores/deviceStore';
 import { useAlertStore } from '../../stores/alertStore';
+import { socketService } from '../../services/socket';
 import api from '../../services/api';
 import { toast } from '../../components/ui/Toast';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip
 } from 'recharts';
-import { 
-  Zap, 
-  Activity, 
-  Cpu, 
-  Brain, 
-  Lightbulb, 
+import {
+  Zap,
+  Activity,
+  Cpu,
+  Brain,
+  Lightbulb,
   Sun,
   Flame,
   CloudRain
@@ -52,12 +53,12 @@ export const DashboardView: React.FC = () => {
         toast.error('Rest API unavailable. Check backend server.');
       }
     };
-    
+
     fetchInitData();
 
     // 2. Establish Socket Connection and subscribe to live telemetry
     socketService.connect();
-    
+
     const statusUnsub = socketService.onStatusChange((connected) => {
       setSocketConnected(connected);
     });
@@ -96,7 +97,7 @@ export const DashboardView: React.FC = () => {
   // 1. Derive real-time values from PZEM and environmental sensors
   const rawPower = useMemo(() => sensors.find(s => s.id === 'sns-001')?.value || 0, [sensors]); // kW
   const powerW = useMemo(() => Math.round(rawPower * 1000), [rawPower]); // W
-  
+
   const frequency = useMemo(() => sensors.find(s => s.id === 'sns-002')?.value || 50.0, [sensors]);
   const temp = useMemo(() => sensors.find(s => s.id === 'sns-003')?.value || 21.0, [sensors]);
   const humidity = useMemo(() => sensors.find(s => s.id === 'sns-004')?.value || 45.0, [sensors]);
@@ -129,7 +130,7 @@ export const DashboardView: React.FC = () => {
   const derivedHistory = useMemo(() => {
     const powerPoints = history['sns-001'] || [];
     const freqPoints = history['sns-002'] || [];
-    
+
     return powerPoints.map((p, index) => {
       const timeStr = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const pW = p.value * 1000;
@@ -161,7 +162,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      
+
       {/* Hero Welcome Section */}
       <section className="glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-500/10 via-violet-500/5 to-transparent rounded-full blur-3xl -z-10 animate-pulse-slow"></div>
@@ -253,7 +254,7 @@ export const DashboardView: React.FC = () => {
           <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Predicted Bill</span>
           <div className="mt-3">
             <span className="text-xl font-bold tracking-tight text-slate-100">₹{(rawPower * 0.15 * 24 * 30 + 1540).toFixed(0)}</span>
-            <span className="text-[9px] text-violet-400 block mt-1 font-semibold">97% Confidence</span>
+            <span className="text-[9px] text-violet-400 block mt-1 font-semibold">LSTM Forecast</span>
           </div>
         </div>
 
@@ -281,7 +282,7 @@ export const DashboardView: React.FC = () => {
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Efficiency</span>
             <span className="text-[9px] text-emerald-400 block font-semibold">Excellent</span>
           </div>
-          
+
           <div className="relative w-14 h-14 flex items-center justify-center">
             {/* SVG Circular Ring */}
             <svg className="w-full h-full transform -rotate-90">
@@ -301,7 +302,7 @@ export const DashboardView: React.FC = () => {
             <h3 className="font-bold text-base text-slate-200">Real-Time Core Parameters</h3>
             <p className="text-[10px] text-slate-500 font-mono">Live dynamic waveforms synced via WebSockets</p>
           </div>
-          
+
           {/* Chart time selectors */}
           <div className="flex items-center gap-1 bg-slate-900/60 p-0.5 rounded-lg border border-slate-800">
             {['live', '1h', '6h', '24h'].map(view => (
@@ -309,8 +310,8 @@ export const DashboardView: React.FC = () => {
                 key={view}
                 onClick={() => setChartView(view as any)}
                 className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                  chartView === view 
-                    ? 'bg-slate-800 text-slate-200 shadow-sm' 
+                  chartView === view
+                    ? 'bg-slate-800 text-slate-200 shadow-sm'
                     : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
@@ -322,7 +323,7 @@ export const DashboardView: React.FC = () => {
 
         {/* 6 Recharts Area Grid (2 Rows x 3 Cols) */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          
+
           {/* Chart 1: Voltage */}
           <div className="glass-panel rounded-xl p-4.5 flex flex-col h-48">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Voltage profile</span>
@@ -454,7 +455,7 @@ export const DashboardView: React.FC = () => {
 
       {/* Grid: AI Summary, Status Pillar, Quick Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left Col: AI Summary & Status Widget */}
         <div className="flex flex-col gap-6 lg:col-span-1">
           {/* AI Summary Card */}
@@ -477,7 +478,7 @@ export const DashboardView: React.FC = () => {
           {/* Device Status Widget */}
           <div className="glass-panel rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-4">Core System Health</span>
-            
+
             <div className="space-y-3.5">
               {[
                 { name: 'ESP32 Microcontroller', status: socketService.isConnected ? 'Online' : 'Offline', color: socketService.isConnected ? 'bg-emerald-500' : 'bg-red-500 animate-pulse' },
@@ -501,7 +502,7 @@ export const DashboardView: React.FC = () => {
         {/* Center & Right: Quick Statistics (2 Columns wide) */}
         <div className="lg:col-span-2 glass-panel rounded-2xl p-6">
           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-6">Historical & Cycle Statistics</span>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
             {[
               { label: "Today's Usage", value: `${(rawPower * 0.05 + 7.82).toFixed(2)} kWh` },
@@ -530,7 +531,7 @@ export const DashboardView: React.FC = () => {
       {/* Dynamic Sensor Cards overview */}
       <section className="flex flex-col gap-4">
         <h3 className="font-bold text-base text-slate-200">Environmental & Aux Sensors</h3>
-        
+
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {/* Sensor 1: Temperature */}
           <div className="glass-panel rounded-xl p-4.5 flex flex-col justify-between min-h-24">

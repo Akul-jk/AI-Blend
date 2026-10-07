@@ -7,8 +7,8 @@ import { Cpu, Activity, Lock, User as UserIcon, ShieldCheck } from 'lucide-react
 
 export const LoginView: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
-  const [username, setUsername] = React.useState('admin');
-  const [password, setPassword] = React.useState('admin123');
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
 
   if (isAuthenticated) {
@@ -36,7 +36,7 @@ export const LoginView: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
       <div className="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500"></div>
-        
+
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
             <Cpu className="w-6 h-6 animate-pulse-slow" />
@@ -58,7 +58,7 @@ export const LoginView: React.FC = () => {
                 onChange={e => setUsername(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-3 bg-slate-900/60 border border-slate-800 focus:border-emerald-500/50 rounded-xl text-slate-200 text-sm focus:outline-none transition-colors"
-                placeholder="Enter admin or username"
+                placeholder="Enter username"
               />
             </div>
           </div>
@@ -105,9 +105,6 @@ export const LoginView: React.FC = () => {
               Register Account
             </Link>
           </div>
-          <p className="text-[10px] text-slate-600 mt-2">
-            System defaults seeded: <code className="text-emerald-500/70 font-mono">admin / admin123</code>
-          </p>
         </div>
       </div>
     </div>

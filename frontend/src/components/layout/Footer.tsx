@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSensorStore } from '../../stores/sensorStore';
-import { Activity, Cpu, Database, Network } from 'lucide-react';
+import { Cpu, Database, Network } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { socketConnected, sensors } = useSensorStore();

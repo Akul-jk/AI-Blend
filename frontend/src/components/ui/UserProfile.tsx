@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, User as UserIcon, Shield, ChevronDown } from 'lucide-react';
+import { LogOut, Shield, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const UserProfile: React.FC = () => {
