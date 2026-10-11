@@ -8,6 +8,7 @@ import { socketService } from '../../services/socket';
 import { useTelemetryStore } from '../../stores/telemetryStore';
 import { useAlertStore } from '../../stores/alertStore';
 import type { TelemetryReading } from '../../types';
+import type { Alert } from '../../types';
 
 const AppShell: React.FC = () => {
   const { sidebarCollapsed } = useAppStore();
@@ -28,23 +29,23 @@ const AppShell: React.FC = () => {
     const offUpdate = socketService.on('telemetry:update', (readings: TelemetryReading[]) => {
       if (Array.isArray(readings)) addReadings(readings);
     });
-    const offAlert = socketService.on('telemetry:alert', (alert: any) => addAlert(alert));
+    const offAlert = socketService.on('telemetry:alert', (alert: Alert) => addAlert(alert));
     return () => { offStatus(); offInit(); offUpdate(); offAlert(); socketService.disconnect(); setSocketConnected(false); };
   }, [addAlert, addReadings, setLatestReadings, setSocketConnected]);
 
   return (
-    <div className="relative min-h-screen text-slate-200 overflow-hidden flex font-sans">
+    <div className="relative flex min-h-screen overflow-hidden font-sans text-[var(--text-primary)]">
       <Background />
 
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'} max-md:ml-0 max-md:mb-16`}>
+      <div className={`flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ${sidebarCollapsed ? 'ml-[76px]' : 'ml-64'} max-md:ml-0`}>
         <Header />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
-          <div className="max-w-7xl mx-auto">
+        <main className="custom-scrollbar flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-7 xl:px-8">
+          <div className="page-enter mx-auto w-full max-w-[1480px]">
             <Outlet />
           </div>
         </main>

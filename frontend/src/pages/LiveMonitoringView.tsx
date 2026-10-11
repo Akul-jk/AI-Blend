@@ -7,13 +7,13 @@ import GlassSelect from '../components/glass/GlassSelect';
 import ChartContainer from '../components/glass/ChartContainer';
 import StatusBadge from '../components/glass/StatusBadge';
 import LoadingState from '../components/glass/LoadingState';
-import { Activity } from 'lucide-react';
+import { Activity, Radio } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const LiveMonitoringView: React.FC = () => {
   const { history, socketConnected } = useTelemetryStore();
 
-  const { data: response, isLoading } = useQuery({
+  const { data: response, isLoading, isError } = useQuery({
     queryKey: ['appliances'],
     queryFn: () => fetchAppliances().then(res => res.data),
   });
@@ -26,6 +26,8 @@ const LiveMonitoringView: React.FC = () => {
   const activeAppliance = appliances.find(a => a.id === activeApplianceId);
   const activeHistory = activeApplianceId ? (history[String(activeApplianceId)] || []) : [];
   const source = activeHistory[activeHistory.length - 1]?.source;
+  const lastReading = activeHistory[activeHistory.length - 1];
+  const isStale = !!lastReading && Date.now() - new Date(lastReading.timestamp).getTime() > 15000;
 
   const chartData = activeHistory.map(r => ({
     time: new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -54,7 +56,7 @@ const LiveMonitoringView: React.FC = () => {
         <Tooltip
           contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
           itemStyle={{ color }}
-          formatter={(value: any) => [`${value} ${unit}`, dataKey.toUpperCase()]}
+          formatter={(value) => [`${String(value)} ${unit}`, dataKey.toUpperCase()]}
         />
         <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fillOpacity={1} fill={`url(#color-${dataKey})`} isAnimationActive={false} />
       </AreaChart>
@@ -65,11 +67,11 @@ const LiveMonitoringView: React.FC = () => {
     <div className="space-y-6">
       <SectionHeader
         title="Live Monitoring"
-        subtitle="Real-time telemetry from connected devices"
+        subtitle="Recent measurements from the selected appliance"
         icon={<Activity />}
         action={
           <div className="flex items-center gap-4">
-            <StatusBadge status={socketConnected ? 'online' : 'offline'} label={socketConnected ? 'LIVE' : 'DISCONNECTED'} />
+            <StatusBadge status={!socketConnected ? 'offline' : isStale ? 'warning' : 'online'} label={!socketConnected ? 'DISCONNECTED' : isStale ? 'STALE' : 'CONNECTED'} />
             {source ? <StatusBadge status={source === 'simulation' ? 'simulation' : 'hardware'} label={source.toUpperCase()} /> : <StatusBadge status="warning" label="NO RECENT SOURCE" />}
           </div>
         }
@@ -84,7 +86,9 @@ const LiveMonitoringView: React.FC = () => {
         />
       </div>
 
+      {isError && <div role="alert" className="mb-4 rounded-xl border border-rose-500/20 bg-rose-400/[.07] p-4 text-sm text-rose-300">Appliance data could not be loaded.</div>}
       {activeApplianceId ? (
+        chartData.length === 0 ? <GlassPanel title="Waiting for readings" icon={<Radio size={18} />}><p className="py-10 text-center text-sm text-[var(--text-muted)]">No telemetry is recorded for {activeAppliance?.name || 'this appliance'} yet. Charts will appear when readings arrive.</p></GlassPanel> :
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartContainer title="Voltage" subtitle={`${activeAppliance?.name} - Real-time`}>
             {getChart('voltage', '#3b82f6', 'V')}
@@ -106,7 +110,7 @@ const LiveMonitoringView: React.FC = () => {
           </ChartContainer>
         </div>
       ) : (
-        <div className="text-center text-slate-400 py-12">No appliances available to monitor.</div>
+        <GlassPanel title="No appliances available" icon={<Radio size={18} />}><p className="py-10 text-center text-sm text-[var(--text-muted)]">Add an appliance and configure a telemetry source to begin monitoring.</p></GlassPanel>
       )}
     </div>
   );

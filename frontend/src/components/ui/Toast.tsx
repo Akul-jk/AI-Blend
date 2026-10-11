@@ -58,34 +58,35 @@ export const ToastContainer: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    <div aria-live="polite" className="fixed bottom-4 right-4 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3 pointer-events-none sm:bottom-6 sm:right-6">
       {toasts.map(t => {
-        let bgColor = 'bg-slate-900 border-slate-800';
-        let icon = <Info className="w-5 h-5 text-blue-400" />;
+        let bgColor = 'border-[var(--line)] text-[var(--text-primary)]';
+        let icon = <Info className="w-5 h-5 text-[var(--accent)]" />;
         
         switch (t.type) {
           case 'success':
-            bgColor = 'bg-slate-900/90 border-emerald-500/20 text-emerald-100 shadow-emerald-950/10';
-            icon = <CheckCircle2 className="w-5 h-5 text-emerald-400" />;
+            bgColor = 'border-emerald-500/25 text-[var(--text-primary)]';
+            icon = <CheckCircle2 className="w-5 h-5 text-[var(--green)]" />;
             break;
           case 'error':
-            bgColor = 'bg-slate-900/90 border-red-500/20 text-red-100 shadow-red-950/10';
-            icon = <AlertCircle className="w-5 h-5 text-red-400" />;
+            bgColor = 'border-rose-500/25 text-[var(--text-primary)]';
+            icon = <AlertCircle className="w-5 h-5 text-[var(--danger)]" />;
             break;
           case 'warning':
-            bgColor = 'bg-slate-900/90 border-amber-500/20 text-amber-100 shadow-amber-950/10';
-            icon = <AlertTriangle className="w-5 h-5 text-amber-400" />;
+            bgColor = 'border-amber-500/25 text-[var(--text-primary)]';
+            icon = <AlertTriangle className="w-5 h-5 text-[var(--warning)]" />;
             break;
           case 'info':
           default:
-            bgColor = 'bg-slate-900/90 border-violet-500/20 text-violet-100 shadow-violet-950/10';
-            icon = <Info className="w-5 h-5 text-violet-400" />;
+            bgColor = 'border-violet-500/25 text-[var(--text-primary)]';
+            icon = <Info className="w-5 h-5 text-[var(--violet)]" />;
         }
 
         return (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-300 animate-slide-in ${bgColor}`}
+            role={t.type === 'error' ? 'alert' : 'status'}
+            className={`pointer-events-auto flex items-start gap-3 rounded-xl border bg-[var(--surface)] p-4 shadow-[var(--shadow)] backdrop-blur-md transition-all duration-300 animate-slide-in ${bgColor}`}
           >
             <div className="mt-0.5 flex-shrink-0">{icon}</div>
             <div className="flex-1 text-sm font-medium pr-2 break-words">{t.message}</div>

@@ -10,14 +10,14 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const statusConfig: Record<StatusType, { icon: React.ElementType, defaultLabel: string, colorClass: string }> = {
-  online: { icon: CheckCircle, defaultLabel: 'ONLINE', colorClass: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' },
-  offline: { icon: Zap, defaultLabel: 'OFFLINE', colorClass: 'text-slate-400 bg-slate-400/10 border-slate-400/30' },
-  simulation: { icon: Activity, defaultLabel: 'SIMULATION', colorClass: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30' },
-  hardware: { icon: HardDrive, defaultLabel: 'HARDWARE', colorClass: 'text-violet-400 bg-violet-400/10 border-violet-400/30' },
-  warning: { icon: AlertTriangle, defaultLabel: 'WARNING', colorClass: 'text-amber-400 bg-amber-400/10 border-amber-400/30' },
-  critical: { icon: AlertCircle, defaultLabel: 'CRITICAL', colorClass: 'text-rose-400 bg-rose-400/10 border-rose-400/30' },
-  info: { icon: Info, defaultLabel: 'INFO', colorClass: 'text-blue-400 bg-blue-400/10 border-blue-400/30' },
+const statusConfig: Record<StatusType, { icon: React.ElementType, defaultLabel: string, style: React.CSSProperties }> = {
+  online: { icon: CheckCircle, defaultLabel: 'ONLINE', style: { color: 'var(--green)', borderColor: 'color-mix(in srgb,var(--green) 28%,transparent)', background: 'color-mix(in srgb,var(--green) 9%,transparent)' } },
+  offline: { icon: Zap, defaultLabel: 'OFFLINE', style: { color: 'var(--text-muted)', borderColor: 'var(--line)', background: 'var(--surface-subtle)' } },
+  simulation: { icon: Activity, defaultLabel: 'SIMULATION', style: { color: 'var(--accent)', borderColor: 'color-mix(in srgb,var(--accent) 28%,transparent)', background: 'var(--accent-soft)' } },
+  hardware: { icon: HardDrive, defaultLabel: 'HARDWARE', style: { color: 'var(--violet)', borderColor: 'color-mix(in srgb,var(--violet) 28%,transparent)', background: 'color-mix(in srgb,var(--violet) 9%,transparent)' } },
+  warning: { icon: AlertTriangle, defaultLabel: 'WARNING', style: { color: 'var(--warning)', borderColor: 'color-mix(in srgb,var(--warning) 28%,transparent)', background: 'color-mix(in srgb,var(--warning) 9%,transparent)' } },
+  critical: { icon: AlertCircle, defaultLabel: 'CRITICAL', style: { color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 28%,transparent)', background: 'color-mix(in srgb,var(--danger) 9%,transparent)' } },
+  info: { icon: Info, defaultLabel: 'INFO', style: { color: 'var(--accent)', borderColor: 'color-mix(in srgb,var(--accent) 28%,transparent)', background: 'var(--accent-soft)' } },
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, className }) => {
@@ -27,9 +27,9 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label, className }) =
   return (
     <span className={cn(
       'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border backdrop-blur-sm',
-      config.colorClass,
+      'border',
       className
-    )}>
+    )} style={config.style}>
       <Icon className="w-3.5 h-3.5" />
       {label || config.defaultLabel}
     </span>

@@ -30,7 +30,7 @@ const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
         className={cn(
           levelClasses[level],
           'rounded-xl transition-colors duration-300',
-          hover && 'hover:border-white/30 hover:bg-slate-800/70',
+          hover && 'hover:border-[var(--line-strong)] hover:bg-[var(--surface-raised)]',
           className
         )}
         {...props}

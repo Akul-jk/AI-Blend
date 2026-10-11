@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { toast } from '../../components/ui/Toast';
 import { Cpu, Activity, Lock, User as UserIcon, ShieldCheck } from 'lucide-react';
+import AuthLayout from '../../components/layout/AuthLayout';
+import { apiErrorMessage } from '../../utils/apiError';
 
 export const LoginView: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
@@ -23,9 +25,9 @@ export const LoginView: React.FC = () => {
       const { token, user } = response.data;
       login(token, user);
       toast.success(`Welcome back, ${user.username}!`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      const errMsg = err.response?.data?.error || 'Authentication failed. Please check credentials.';
+      const errMsg = apiErrorMessage(err, 'Authentication failed. Please check credentials.');
       toast.error(errMsg);
     } finally {
       setSubmitting(false);
@@ -33,7 +35,7 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+    <AuthLayout>
       <div className="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500"></div>
 
@@ -107,7 +109,7 @@ export const LoginView: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 export default LoginView;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from './GlassCard';
 
 interface GlassInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -9,11 +9,14 @@ interface GlassInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const GlassInput = React.forwardRef<HTMLInputElement, GlassInputProps>(
-  ({ className, label, error, helperText, leftIcon, required, ...props }, ref) => {
+  ({ className, label, error, helperText, leftIcon, required, id: inputId, ...props }, ref) => {
+    const generatedId = useId();
+    const id = inputId || generatedId;
+    const descriptionId = error ? `${id}-error` : helperText ? `${id}-help` : undefined;
     return (
       <div className="flex flex-col gap-1.5 w-full">
         {label && (
-          <label className="text-sm font-medium text-slate-300 flex items-center gap-1">
+          <label htmlFor={id} className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-1">
             {label}
             {required && <span className="text-rose-400">*</span>}
           </label>
@@ -26,8 +29,11 @@ const GlassInput = React.forwardRef<HTMLInputElement, GlassInputProps>(
           )}
           <input
             ref={ref}
+            id={id}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={descriptionId}
             className={cn(
-              "w-full bg-slate-900/50 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slate-500",
+              "w-full bg-[var(--surface-subtle)] border border-[var(--line)] rounded-[var(--radius-control)] px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
               "focus:outline-none focus:ring-2 focus:border-transparent transition-all backdrop-blur-sm",
               leftIcon && "pl-10",
               error ? "focus:ring-rose-500 border-rose-500/50" : "focus:ring-cyan-500",
@@ -36,8 +42,8 @@ const GlassInput = React.forwardRef<HTMLInputElement, GlassInputProps>(
             {...props}
           />
         </div>
-        {error && <span className="text-xs text-rose-400 mt-0.5">{error}</span>}
-        {!error && helperText && <span className="text-xs text-slate-400 mt-0.5">{helperText}</span>}
+        {error && <span id={descriptionId} role="alert" className="text-xs text-rose-400 mt-0.5">{error}</span>}
+        {!error && helperText && <span id={descriptionId} className="text-xs text-slate-400 mt-0.5">{helperText}</span>}
       </div>
     );
   }

@@ -2,9 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/energy-mark.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <meta name="theme-color" content="#07111f" />
+    <meta name="description" content="Smart Energy Monitor brings real-time energy telemetry, analytics, and forecasting into one workspace." />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem('theme');
+          const theme = saved === 'light' || saved === 'dark'
+            ? saved
+            : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.classList.add(theme);
+          document.documentElement.style.colorScheme = theme;
+      } catch {
+        const fallback = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = fallback;
+        document.documentElement.classList.add(fallback);
+        document.documentElement.style.colorScheme = fallback;
+      }
+      })();
+    </script>
+    <title>Smart Energy Monitor</title>
   </head>
   <body>
     <div id="root"></div>

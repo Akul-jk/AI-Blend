@@ -82,6 +82,61 @@ export const evaluateModel = () => api.post('/ml/evaluate');
 export const fetchModelInfo = () => api.get<MLModelInfo>('/ml/model');
 export const fetchModelMetrics = () => api.get<MLMetrics>('/ml/metrics');
 export const fetchModels = () => api.get('/ml/models');
+export interface ManagedModel {
+  id?: string;
+  version?: string;
+  active_version?: string;
+  model_id?: string;
+  model_version?: string;
+  status: string;
+  active?: boolean;
+  source?: string;
+  model_type?: string;
+  framework?: string;
+  framework_version?: string;
+  tensorflow_version?: string;
+  dataset_provenance?: string;
+  created_at_utc?: string;
+  package_sha256?: string;
+  reason?: string;
+  sequence_length?: number;
+  feature_count?: number;
+  feature_columns?: string[];
+  sampling_interval_ms?: number | null;
+  target_column?: string;
+  target_unit?: string;
+  validation_report?: Record<string, any>;
+  metrics?: Record<string, number | null> | null;
+  activation_history?: Array<{ from: string; to: string; created_at_utc?: string }>;
+}
+export interface ModelValidationReport {
+  status: 'validated' | 'rejected';
+  id?: string;
+  package_sha256?: string;
+  reason?: string;
+  report?: Record<string, any>;
+  checks?: Record<string, string>;
+  contract?: Record<string, any>;
+  probe?: Record<string, any>;
+  runtime?: Record<string, any>;
+}
+export const fetchManagedModels = () => api.get<{ active_version: string; models: ManagedModel[] }>('/ml/model-management/models');
+export const fetchManagedModel = (version: string) => api.get<ManagedModel>(`/ml/model-management/models/${encodeURIComponent(version)}`);
+export const fetchModelHistory = () => api.get<{ active_version: string; rollback_version?: string | null; activation_history: ManagedModel['activation_history']; rejected_candidates: ManagedModel[] }>('/ml/model-management/history');
+export const validateModelPackage = (file: File, onUploadProgress?: (percent: number) => void) =>
+  api.post<ModelValidationReport>('/ml/model-management/models/validate', file, {
+    headers: { 'Content-Type': 'application/zip' }, timeout: 240000,
+    onUploadProgress: event => onUploadProgress?.(event.total ? Math.round(event.loaded * 100 / event.total) : 0),
+  });
+export const stageModelPackage = (file: File, onUploadProgress?: (percent: number) => void) =>
+  api.post<ModelValidationReport & { version?: string }>('/ml/model-management/models/stage', file, {
+    headers: { 'Content-Type': 'application/zip' }, timeout: 240000,
+    onUploadProgress: event => onUploadProgress?.(event.total ? Math.round(event.loaded * 100 / event.total) : 0),
+  });
+export const activateManagedModel = (version: string) =>
+  api.post(`/ml/model-management/models/${encodeURIComponent(version)}/activate`);
+export const rollbackManagedModel = (version?: string) => api.post('/ml/model-management/rollback', { version });
+export const deleteManagedModel = (version: string) => api.delete(`/ml/model-management/models/${encodeURIComponent(version)}`);
 export const generateDataset = () => api.post('/ml/dataset/generate');
 
 // ---- Alerts ----

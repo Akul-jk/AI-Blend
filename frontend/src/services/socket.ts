@@ -54,17 +54,19 @@ class SocketService {
     };
   }
 
-  on(event: string, callback: (...args: any[]) => void) {
-    this.socket?.on(event, callback);
-    return () => this.socket?.off(event, callback);
+  on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void) {
+    const listener = callback as unknown as (...args: unknown[]) => void;
+    this.socket?.on(event, listener);
+    return () => this.socket?.off(event, listener);
   }
 
-  off(event: string, callback?: (...args: any[]) => void) {
-    if (callback) this.socket?.off(event, callback);
+  off<TArgs extends unknown[]>(event: string, callback?: (...args: TArgs) => void) {
+    if (callback) this.socket?.off(event, callback as unknown as (...args: unknown[]) => void);
     else this.socket?.off(event);
   }
 
   disconnect() {
+    this.isConnecting = false;
     this.socket?.disconnect();
     this.socket = null;
   }

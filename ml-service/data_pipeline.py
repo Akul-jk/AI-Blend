@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import json
 import joblib
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from config import SEQUENCE_LENGTH, N_FEATURES, FEATURE_COLUMNS, TARGET, MODELS_DIR, SAMPLING_INTERVAL_SECONDS
@@ -72,11 +73,29 @@ def preprocess_data(df, is_training=True, scaler_path=None, target_scaler_path=N
         joblib.dump(scaler, scaler_path)
         joblib.dump(target_scaler, target_scaler_path)
     else:
-        scaler = joblib.load(scaler_path)
-        target_scaler = joblib.load(target_scaler_path)
+        if str(scaler_path).endswith('.json'):
+            with open(scaler_path, encoding='utf-8') as scaler_file:
+                scaler = json.load(scaler_file)
+            mean = np.asarray(scaler['mean'], dtype=float)
+            scale = np.asarray(scaler['scale'], dtype=float)
+            if mean.shape != (len(FEATURE_COLUMNS),) or scale.shape != mean.shape or np.any(scale <= 0):
+                raise ValueError('Managed StandardScaler parameters do not match the feature contract')
+            scaled_features = (features_df.to_numpy(dtype=float) - mean) / scale
+        else:
+            scaler = joblib.load(scaler_path)
+            scaled_features = scaler.transform(features_df)
 
-        scaled_features = scaler.transform(features_df)
-        scaled_target = target_scaler.transform(target_series)
+        if str(target_scaler_path).endswith('.json'):
+            with open(target_scaler_path, encoding='utf-8') as scaler_file:
+                target_scaler = json.load(scaler_file)
+            target_scale = np.asarray(target_scaler['scale'], dtype=float)
+            target_min = np.asarray(target_scaler['min'], dtype=float)
+            if target_scale.shape != (1,) or target_min.shape != (1,) or np.any(target_scale <= 0):
+                raise ValueError('Managed MinMaxScaler parameters do not match the target contract')
+            scaled_target = target_series.to_numpy(dtype=float) * target_scale + target_min
+        else:
+            target_scaler = joblib.load(target_scaler_path)
+            scaled_target = target_scaler.transform(target_series)
 
     return scaled_features, scaled_target.flatten(), df
 

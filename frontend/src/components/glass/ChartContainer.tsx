@@ -13,11 +13,11 @@ interface ChartContainerProps {
 
 const ChartContainer: React.FC<ChartContainerProps> = ({ title, subtitle, action, children, className, height = 300 }) => {
   return (
-    <GlassCard className={cn("p-5 flex flex-col", className)}>
+    <GlassCard className={cn("rounded-[var(--radius-card)] p-5 flex flex-col", className)}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-base font-semibold text-white tracking-wide">{title}</h3>
-          {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
+          <h3 className="text-base font-semibold text-[var(--text-primary)] tracking-tight">{title}</h3>
+          {subtitle && <p className="text-sm text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
         </div>
         {action && <div>{action}</div>}
       </div>

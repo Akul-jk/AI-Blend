@@ -59,3 +59,4 @@ Thumbs.db
 ml-service/datasets/simulation/synthetic_telemetry.csv
 ml-service/models/simulation/lstm_model.keras
 ml-service/models/simulation/scaler.pkl
+ml-service/models/managed/

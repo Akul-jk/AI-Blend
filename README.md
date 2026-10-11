@@ -40,12 +40,14 @@ Backend variables:
 | `PASSWORD_RESET_WEBHOOK_URL` | Password recovery delivery endpoint | If absent, recovery returns unavailable; codes are never displayed or logged |
 | `SIMULATION_INTERVAL_MS` | Simulator cadence | `5000` |
 | `SIMULATION_SEED` | Deterministic simulation noise seed | `42` |
+| `MODEL_STORE_DIR` | Persistent versioned ML model registry and artifact store | `ml-service/models/managed` |
 | `TELEMETRY_RETENTION_DAYS` | Bounded telemetry retention | `30`, clamped to 1–365 days |
 | `ML_SERVICE_URL` | ML service origin | `http://localhost:8000` |
+| `ML_INTERNAL_TOKEN` | Shared backend-to-ML token for model-management routes | Must be the same random secret of at least 32 characters in both services; otherwise management APIs return unavailable |
 
 Frontend variables are optional and contain server origins (without `/api/v1`): `VITE_API_URL` and `VITE_SOCKET_URL`. Both default to `http://localhost:5000`.
 
-The ML process reads `DB_FILE` and `SIMULATION_INTERVAL_MS` from its environment. If `DB_FILE` is unset, it reads `backend/database.sqlite` relative to the ML service directory. Keep the cadence value identical in backend and ML environments.
+The ML process reads `DB_FILE`, `SIMULATION_INTERVAL_MS`, `MODEL_STORE_DIR`, and `ML_INTERNAL_TOKEN` from its environment. If `DB_FILE` is unset, it reads `backend/database.sqlite` relative to the ML service directory. Keep the cadence value identical in backend and ML environments. `MODEL_STORE_DIR` must point to persistent local storage; managed model versions and the active registry are stored there. The model-management routes are accessed through the authenticated Express backend and require `ML_INTERNAL_TOKEN` to be configured identically in both services.
 
 ## Run services
 

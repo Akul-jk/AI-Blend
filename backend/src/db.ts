@@ -332,6 +332,14 @@ export async function initDb() {
       );
     }
 
+    // The general assignment backfill runs before seed appliances exist.
+    // Create their initial effective meter assignments after seeding so the
+    // simulator can safely emit telemetry on a fresh database.
+    await db.run(`INSERT INTO appliance_measurement_assignments(appliance_id, pzem_id, circuit_id, valid_from)
+      SELECT a.id, a.pzem_id, a.circuit_id, COALESCE(a.updated_at, CURRENT_TIMESTAMP) FROM appliances a
+      WHERE (a.pzem_id IS NOT NULL OR a.circuit_id IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM appliance_measurement_assignments m WHERE m.appliance_id = a.id AND m.valid_to IS NULL)`);
+
     // Tariff Seeding (KSEB)
     const tariffResult = await db.run(
       "INSERT OR IGNORE INTO tariffs (name, type, fixed_charge, meter_rent, fuel_surcharge, electricity_duty_percent, green_tariff_optional) VALUES ('KSEB LT-I Domestic', 'domestic', 50, 6, 0.10, 5, 0.77)"

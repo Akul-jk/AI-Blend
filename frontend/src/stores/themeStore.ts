@@ -1,39 +1,56 @@
 import { create } from 'zustand';
 
+export type Theme = 'light' | 'dark';
+const THEME_KEY = 'theme';
+const savedTheme = (): Theme | null => {
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    return value === 'light' || value === 'dark' ? value : null;
+  } catch { return null; }
+};
+const persistTheme = (theme: Theme) => { try { localStorage.setItem(THEME_KEY, theme); } catch { /* Theme still applies for this session. */ } };
+const systemTheme = (): Theme => window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+const initialTheme = (): Theme => {
+  return savedTheme() || systemTheme();
+};
+const applyTheme = (theme: Theme) => {
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  root.classList.remove('light', 'dark');
+  root.classList.add(theme);
+  root.style.colorScheme = theme;
+};
+
 interface ThemeState {
-  theme: 'light' | 'dark';
+  theme: Theme;
+  hasExplicitPreference: boolean;
   toggleTheme: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
+  setTheme: (theme: Theme) => void;
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'dark',
+  theme: initialTheme(),
+  hasExplicitPreference: savedTheme() !== null,
   toggleTheme: () => set((state) => {
-    const nextTheme = state.theme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('theme', nextTheme);
-    
-    // Update html tag class list
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(nextTheme);
-
-    return { theme: nextTheme };
+    const theme = state.theme === 'light' ? 'dark' : 'light';
+    persistTheme(theme);
+    applyTheme(theme);
+    return { theme, hasExplicitPreference: true };
   }),
-  setTheme: (theme) => set(() => {
-    localStorage.setItem('theme', theme);
-    
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-
-    return { theme };
-  })
+  setTheme: (theme) => {
+    persistTheme(theme);
+    applyTheme(theme);
+    set({ theme, hasExplicitPreference: true });
+  },
 }));
 
-// Initialize theme class on store load
+applyTheme(useThemeStore.getState().theme);
 if (typeof window !== 'undefined') {
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  const root = window.document.documentElement;
-  root.classList.remove('light', 'dark');
-  root.classList.add(savedTheme);
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', (event) => {
+    if (!useThemeStore.getState().hasExplicitPreference) {
+      const theme = event.matches ? 'light' : 'dark';
+      applyTheme(theme);
+      useThemeStore.setState({ theme });
+    }
+  });
 }

@@ -13,10 +13,10 @@ const GlassPanel: React.FC<GlassPanelProps> = ({ title, icon, action, children, 
   return (
     <GlassCard className={cn('p-6 flex flex-col', className)} {...props}>
       {(title || icon || action) && (
-        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-[var(--line)]">
           <div className="flex items-center gap-3">
-            {icon && <span className="text-cyan-400">{icon}</span>}
-            {title && <h3 className="text-lg font-semibold text-white tracking-wide">{title}</h3>}
+            {icon && <span className="text-[var(--accent)]">{icon}</span>}
+            {title && <h3 className="text-base font-semibold text-[var(--text-primary)] tracking-tight">{title}</h3>}
           </div>
           {action && <div>{action}</div>}
         </div>

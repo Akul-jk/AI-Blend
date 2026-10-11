@@ -25,7 +25,7 @@ const AIOverviewView: React.FC = () => {
         subtitle="Overview of the machine learning models driving energy predictions"
         icon={<BrainCircuit />}
         action={
-           <StatusBadge status={modelInfo?.dataset_source === 'simulation' ? 'simulation' : 'online'} label={`${String(modelInfo?.dataset_source || 'MODEL').toUpperCase()}-TRAINED MODEL`} />
+           <StatusBadge status="info" label={modelInfo?.dataset_source ? `DECLARED SOURCE · ${String(modelInfo.dataset_source).toUpperCase()}` : 'MODEL SOURCE UNAVAILABLE'} />
         }
       />
 
@@ -97,7 +97,7 @@ const AIOverviewView: React.FC = () => {
 
             <MetricCard
               label="Test Samples"
-              value={modelInfo.metrics?.test_samples || 0}
+              value={modelInfo.metrics?.test_samples ?? '—'}
               icon={<Database />}
             />
           </div>

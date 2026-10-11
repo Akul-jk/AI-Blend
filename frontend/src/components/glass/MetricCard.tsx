@@ -20,18 +20,18 @@ const MetricCard: React.FC<MetricCardProps> = ({
   label, value, unit, icon, trend, trendValue, status, className
 }) => {
   return (
-    <GlassCard level="standard" className={cn("p-5 flex flex-col gap-3", className)}>
+    <GlassCard level="standard" className={cn("kpi-card rounded-[16px] p-5 flex flex-col gap-3", className)}>
       <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2 text-slate-300">
-          {icon && <span className="text-cyan-400/80">{icon}</span>}
-          <span className="text-sm font-medium tracking-wide uppercase">{label}</span>
+        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+          {icon && <span className="text-[var(--accent)]">{icon}</span>}
+          <span className="text-xs font-semibold tracking-[.1em] uppercase">{label}</span>
         </div>
         {status && <StatusBadge status={status} />}
       </div>
 
       <div className="flex items-baseline gap-1 mt-1">
-        <span className="text-3xl font-bold text-white tracking-tight">{value}</span>
-        {unit && <span className="text-sm font-medium text-slate-400">{unit}</span>}
+        <span className="text-3xl font-semibold text-[var(--text-primary)] tracking-tight">{value}</span>
+        {unit && <span className="text-sm font-medium text-[var(--text-muted)]">{unit}</span>}
       </div>
 
       {trend && (

@@ -12,8 +12,8 @@ const LoadingState: React.FC<LoadingStateProps> = ({ variant = 'spinner', classN
   if (variant === 'spinner') {
     return (
       <div className={cn("flex flex-col items-center justify-center p-8", className)}>
-        <div className="w-8 h-8 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4" />
-        <p className="text-sm text-slate-400 animate-pulse">{text}</p>
+        <div role="status" className="w-8 h-8 border-[3px] border-[color-mix(in_srgb,var(--accent)_20%,transparent)] border-t-[var(--accent)] rounded-full animate-spin mb-4" />
+        <p className="text-sm text-[var(--text-muted)] animate-pulse">{text}</p>
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import express from 'express';
 import { getDb } from '../db';
 import { authenticateToken, authorizeRoles } from '../auth';
 
@@ -7,6 +8,55 @@ const sendSuccess = (res: any, data: any, message = 'Success', status = 200) => 
 const sendError = (res: any, message: string, error: any = {}, status = 500) => res.status(status).json({ success: false, message, error });
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const MODEL_UPLOAD_LIMIT = 128 * 1024 * 1024;
+
+async function proxyModelManagement(req: any, res: any, path: string, method = 'GET', body?: Buffer, contentType = 'application/zip') {
+  const internalToken = process.env.ML_INTERNAL_TOKEN || '';
+  if (internalToken.length < 32) return sendError(res, 'Model management is not configured.', {}, 503);
+  try {
+    const response = await fetch(`${ML_URL}/management${path}`, {
+      method,
+      headers: {
+        'X-ML-Internal-Token': internalToken,
+        ...(body ? { 'Content-Type': contentType, 'Content-Length': String(body.length) } : {}),
+        ...(method === 'POST' && !body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(body ? { body } : {}),
+    });
+    const data: any = await response.json().catch(() => ({ detail: 'Model service returned an invalid response.' }));
+    if (!response.ok) return sendError(res, data.detail || 'Model management request failed.', {}, response.status);
+    return sendSuccess(res, data);
+  } catch {
+    return sendError(res, 'Model management service is unavailable.', {}, 503);
+  }
+}
+
+const adminOnly = [authenticateToken, authorizeRoles('admin')];
+const rawModelPackage = express.raw({
+  type: ['application/zip', 'application/octet-stream'],
+  limit: MODEL_UPLOAD_LIMIT,
+});
+
+router.get('/model-management/models', ...adminOnly, (req, res) =>
+  proxyModelManagement(req, res, '/models'));
+router.get('/model-management/history', ...adminOnly, (req, res) =>
+  proxyModelManagement(req, res, '/history'));
+router.get('/model-management/models/:version', ...adminOnly, (req, res) =>
+  proxyModelManagement(req, res, `/models/${encodeURIComponent(req.params.version)}`));
+router.post('/model-management/models/validate', ...adminOnly, rawModelPackage, (req, res) => {
+  if (!Buffer.isBuffer(req.body)) return sendError(res, 'Upload must be a ZIP package.', {}, 415);
+  proxyModelManagement(req, res, '/models/validate', 'POST', req.body);
+});
+router.post('/model-management/models/stage', ...adminOnly, rawModelPackage, (req, res) => {
+  if (!Buffer.isBuffer(req.body)) return sendError(res, 'Upload must be a ZIP package.', {}, 415);
+  proxyModelManagement(req, res, '/models/stage', 'POST', req.body);
+});
+router.post('/model-management/models/:version/activate', ...adminOnly, (req, res) =>
+  proxyModelManagement(req, res, `/models/${encodeURIComponent(req.params.version)}/activate`, 'POST'));
+router.post('/model-management/rollback', ...adminOnly, (req, res) =>
+  proxyModelManagement(req, res, '/rollback', 'POST', Buffer.from(JSON.stringify(req.body || {})), 'application/json'));
+router.delete('/model-management/models/:version', ...adminOnly, (req, res) =>
+  proxyModelManagement(req, res, `/models/${encodeURIComponent(req.params.version)}`, 'DELETE'));
 
 router.get('/model', authenticateToken, async (req, res) => {
   try {

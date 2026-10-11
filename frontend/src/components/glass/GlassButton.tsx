@@ -45,7 +45,7 @@ const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(
           className
         )}
         disabled={isDisabled}
-        {...props as any}
+        {...props}
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         {!loading && icon && <span className="inline-flex">{icon}</span>}

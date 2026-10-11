@@ -14,12 +14,12 @@ const EnergyAnalyticsView: React.FC = () => {
 
   const { data: trends = [], isLoading: trendsLoading } = useQuery({
     queryKey: ['analytics', 'trends', period],
-    queryFn: () => fetchAnalyticsTrends(period).then(res => res.data as any[]),
+    queryFn: () => fetchAnalyticsTrends(period).then(res => res.data),
   });
 
   const { data: breakdown = [] } = useQuery({
     queryKey: ['analytics', 'breakdown'],
-    queryFn: () => fetchAnalyticsBreakdown().then(res => res.data as any[]),
+    queryFn: () => fetchAnalyticsBreakdown().then(res => res.data),
   });
   const billing = useQuery({ queryKey: ['billing-usage'], queryFn: async () => {
     const [usageResponse, settingsResponse] = await Promise.all([fetchBillingUsage(), fetchSettings()]);
@@ -29,7 +29,7 @@ const EnergyAnalyticsView: React.FC = () => {
 
   const breakdownColors = ['#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
-  const totalEnergy = trends.reduce((acc, curr) => acc + (curr.energy || 0), 0);
+  const totalEnergy = trends.length ? trends.reduce((acc, curr) => acc + (curr.energy || 0), 0) : null;
   const bill = billing.data?.bill;
 
   return (
@@ -56,23 +56,23 @@ const EnergyAnalyticsView: React.FC = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Total Energy" value={totalEnergy.toFixed(1)} unit="kWh" />
-        <MetricCard label="This Month Energy" value={billing.data?.usage.consumption.toFixed(3) || '—'} unit="kWh" />
+        <MetricCard label={`${period[0].toUpperCase()}${period.slice(1)} energy`} value={totalEnergy == null ? '—' : totalEnergy.toFixed(1)} unit="kWh" />
+        <MetricCard label="This Month Energy" value={billing.data?.usage.consumption == null ? '—' : billing.data.usage.consumption.toFixed(3)} unit="kWh" />
         <MetricCard label="Current Month Bill" value={bill ? `${bill.currency} ${bill.total.toFixed(2)}` : '—'} icon={<DollarSign />} />
-        <MetricCard label="Average Power" value={trends.length ? (trends.reduce((a,c) => a + c.avg_power, 0) / trends.length).toFixed(0) : 0} unit="W" />
-        <MetricCard label="Peak Recorded" value={Math.max(0, ...trends.map(t => t.peak_power)).toFixed(0)} unit="W" />
+        <MetricCard label="Average Power" value={trends.length ? (trends.reduce((a,c) => a + c.avg_power, 0) / trends.length).toFixed(0) : '—'} unit="W" />
+        <MetricCard label="Peak Recorded" value={trends.length ? Math.max(...trends.map(t => t.peak_power)).toFixed(0) : '—'} unit="W" />
       </div>
 
       <ChartContainer title="Consumption Over Time">
-        {trendsLoading ? <LoadingState /> : (
+        {trendsLoading ? <LoadingState /> : trends.length === 0 ? <div className="flex min-h-64 items-center justify-center text-sm text-[var(--text-muted)]">No recorded energy data is available for this period.</div> : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={trends} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="time" stroke="rgba(255,255,255,0.2)" fontSize={12} tickMargin={10} />
-              <YAxis stroke="rgba(255,255,255,0.2)" fontSize={12} tickMargin={10} />
+              <CartesianGrid strokeDasharray="3 5" stroke="var(--chart-grid)" vertical={false} />
+              <XAxis dataKey="time" stroke="var(--line-strong)" tick={{ fill: 'var(--text-muted)' }} fontSize={12} tickMargin={10} />
+              <YAxis stroke="var(--line-strong)" tick={{ fill: 'var(--text-muted)' }} fontSize={12} tickMargin={10} />
               <Tooltip
-                contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                contentStyle={{ backgroundColor: 'var(--tooltip)', border: '1px solid var(--line)', borderRadius: '10px', color: 'var(--text-primary)', boxShadow: 'var(--shadow-soft)' }}
+                cursor={{ fill: 'var(--accent-soft)' }}
               />
               <Bar dataKey="energy" fill="#06b6d4" radius={[4, 4, 0, 0]} name="Energy (kWh)" />
             </BarChart>
@@ -84,12 +84,12 @@ const EnergyAnalyticsView: React.FC = () => {
         <ChartContainer title="Appliance Comparison">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={breakdown} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-              <XAxis type="number" stroke="rgba(255,255,255,0.2)" />
-              <YAxis dataKey="appliance_name" type="category" stroke="rgba(255,255,255,0.2)" width={100} fontSize={11} />
+              <CartesianGrid strokeDasharray="3 5" stroke="var(--chart-grid)" horizontal={false} />
+              <XAxis type="number" stroke="var(--line-strong)" tick={{ fill: 'var(--text-muted)' }} />
+              <YAxis dataKey="appliance_name" type="category" stroke="var(--line-strong)" tick={{ fill: 'var(--text-secondary)' }} width={100} fontSize={11} />
               <Tooltip
-                contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                contentStyle={{ backgroundColor: 'var(--tooltip)', border: '1px solid var(--line)', borderRadius: '10px', color: 'var(--text-primary)', boxShadow: 'var(--shadow-soft)' }}
+                cursor={{ fill: 'var(--accent-soft)' }}
               />
               <Bar dataKey="energy" name="Energy (kWh)" radius={[0, 4, 4, 0]}>
                 {breakdown.map((_, index) => (

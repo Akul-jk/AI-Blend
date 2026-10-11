@@ -31,6 +31,7 @@ const AlertsView = React.lazy(() => import('./pages/Alerts/AlertsView'));
 const DeviceView = React.lazy(() => import('./pages/Device/DeviceView'));
 const DatasetView = React.lazy(() => import('./pages/Dataset/DatasetView'));
 const ModelComparisonView = React.lazy(() => import('./pages/ModelComparison/ModelComparisonView'));
+const ModelManagementView = React.lazy(() => import('./pages/ModelManagement/ModelManagementView'));
 const ReportsView = React.lazy(() => import('./pages/Reports/ReportsView'));
 const ProfileView = React.lazy(() => import('./pages/Profile/ProfileView'));
 const SensorDashboardView = React.lazy(() => import('./pages/SensorDashboard/SensorDashboardView'));
@@ -43,10 +44,10 @@ const ResetView = React.lazy(() => import('./pages/ResetPassword/ResetView'));
 
 // Loading screen
 const LoadingScreen = () => (
-  <div className="h-screen w-screen flex items-center justify-center bg-[#0a0f1c]">
+  <div role="status" className="flex h-screen w-screen items-center justify-center bg-[var(--canvas)]">
     <div className="flex flex-col items-center gap-4">
-      <div className="animate-spin w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full"></div>
-      <span className="text-slate-400 text-sm">Loading Energy Intelligence...</span>
+      <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-[color-mix(in_srgb,var(--accent)_20%,transparent)] border-t-[var(--accent)]"></div>
+      <span className="text-sm text-[var(--text-muted)]">Loading Energy Intelligence…</span>
     </div>
   </div>
 );
@@ -107,6 +108,7 @@ const App: React.FC = () => {
                   {/* AI/ADMIN */}
                   <Route path="/training" element={<ModelTrainingView />} />
                   <Route path="/comparison" element={<ModelComparisonView />} />
+                  <Route path="/model-management" element={<ModelManagementView />} />
 
                   {/* Profile */}
                   <Route path="/profile" element={<ProfileView />} />
