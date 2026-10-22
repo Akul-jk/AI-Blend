@@ -1,9 +1,41 @@
 import { Router } from 'express';
 import { getDb } from '../db';
 import { authenticateToken, authorizeRoles } from '../auth';
+import { isIndiaPhoneNumber, isSmsConfigured } from '../services/smsAlerts';
 
 const router = Router();
 const defaults: Record<string, string> = { phase_type: 'single' };
+
+router.get('/notifications', authenticateToken, async (req, res) => {
+  try {
+    const user = await getDb().get('SELECT phone_number, sms_alerts_enabled FROM users WHERE id = ?', [req.user!.id]);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, data: {
+      phone_number: user.phone_number || '',
+      sms_alerts_enabled: Boolean(user.sms_alerts_enabled),
+      sms_configured: isSmsConfigured(),
+      sms_scope: 'hardware alerts only',
+    } });
+  } catch { res.status(500).json({ success: false, message: 'Could not load notification settings' }); }
+});
+
+router.put('/notifications', authenticateToken, async (req, res) => {
+  const phone = typeof req.body.phone_number === 'string' ? req.body.phone_number.trim() : '';
+  const enabled = req.body.sms_alerts_enabled;
+  if (enabled !== undefined && typeof enabled !== 'boolean') return res.status(400).json({ success: false, message: 'sms_alerts_enabled must be true or false' });
+  if (phone && !isIndiaPhoneNumber(phone)) return res.status(400).json({ success: false, message: 'Enter a valid Indian mobile number in international format, such as +919876543210' });
+  if (enabled === true && !phone) return res.status(400).json({ success: false, message: 'Add a phone number before enabling SMS alerts' });
+  if (enabled === true && !isSmsConfigured()) return res.status(503).json({ success: false, message: 'SMS delivery is not configured by the administrator yet' });
+  try {
+    const db = getDb();
+    await db.run('UPDATE users SET phone_number = ?, sms_alerts_enabled = ? WHERE id = ?', [phone || null, enabled === undefined ? 0 : Number(enabled), req.user!.id]);
+    const user = await db.get('SELECT phone_number, sms_alerts_enabled FROM users WHERE id = ?', [req.user!.id]);
+    res.json({ success: true, message: 'Notification settings saved', data: {
+      phone_number: user.phone_number || '', sms_alerts_enabled: Boolean(user.sms_alerts_enabled),
+      sms_configured: isSmsConfigured(), sms_scope: 'hardware alerts only',
+    } });
+  } catch { res.status(500).json({ success: false, message: 'Could not save notification settings' }); }
+});
 
 router.get('/', authenticateToken, async (_req, res) => {
   try {

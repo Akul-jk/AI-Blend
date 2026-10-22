@@ -59,6 +59,7 @@ const AppliancesView: React.FC = () => {
                <div>
                  <h3 className="text-lg font-bold text-white">{app.name}</h3>
                  <p className="text-sm text-slate-400">{app.manufacturer} {app.model}</p>
+                 {app.latest_telemetry?.source && <p className="mt-1 text-xs text-amber-200">{app.latest_telemetry.source === 'simulation' ? 'Synthetic simulator data' : 'Hardware telemetry'}</p>}
                </div>
                <StatusBadge status={app.latest_telemetry && Date.now() - new Date(app.latest_telemetry.timestamp).getTime() < 60000 ? 'online' : 'offline'} label={app.latest_telemetry && Date.now() - new Date(app.latest_telemetry.timestamp).getTime() < 60000 ? 'TELEMETRY ACTIVE' : 'NO RECENT TELEMETRY'} />
             </div>

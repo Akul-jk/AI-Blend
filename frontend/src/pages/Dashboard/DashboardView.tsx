@@ -1,3 +1,4 @@
+// Legacy visual prototype, not routed by App.tsx; contains synthetic placeholder metrics.
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSensorStore } from '../../stores/sensorStore';
 import { useDeviceStore } from '../../stores/deviceStore';

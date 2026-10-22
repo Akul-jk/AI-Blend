@@ -3,8 +3,10 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_VERSION = "energy_lstm_sim_v1"
 MODELS_DIR = os.path.join(BASE_DIR, "models", "simulation", MODEL_VERSION)
+MODEL_CANDIDATES_DIR = os.path.join(BASE_DIR, "models", "candidates")
 MODEL_STORE_DIR = os.path.abspath(os.environ.get("MODEL_STORE_DIR", os.path.join(BASE_DIR, "models", "managed")))
 DATASETS_DIR = os.path.join(BASE_DIR, "datasets", "simulation")
+DATASET_EXPORTS_DIR = os.path.join(BASE_DIR, "datasets", "exports")
 
 
 SEQUENCE_LENGTH = 60

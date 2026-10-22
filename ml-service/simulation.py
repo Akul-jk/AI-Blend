@@ -4,8 +4,10 @@ This module intentionally does not create a second synthetic data source.
 """
 import os
 import sqlite3
+import uuid
+from datetime import datetime, timezone
 import pandas as pd
-from config import DATASETS_DIR
+from config import DATASET_EXPORTS_DIR
 
 
 def generate_dataset():
@@ -27,9 +29,10 @@ def generate_dataset():
     if frame.empty:
         raise ValueError("No valid simulated telemetry is available to export")
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
-    os.makedirs(DATASETS_DIR, exist_ok=True)
-    output_path = os.path.join(DATASETS_DIR, "canonical_simulation_telemetry.csv")
-    frame.to_csv(output_path, index=False)
+    os.makedirs(DATASET_EXPORTS_DIR, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    output_path = os.path.join(DATASET_EXPORTS_DIR, f"canonical_simulation_telemetry_{stamp}_{uuid.uuid4().hex[:8]}.csv")
+    frame.to_csv(output_path, index=False, mode="x")
     print(f"Exported {len(frame)} canonical telemetry rows to {output_path}")
     return output_path
 

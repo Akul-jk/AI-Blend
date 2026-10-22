@@ -34,6 +34,8 @@ export async function initDb() {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
+      phone_number TEXT,
+      sms_alerts_enabled INTEGER NOT NULL DEFAULT 0,
       role TEXT NOT NULL DEFAULT 'user',
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -47,7 +49,21 @@ export async function initDb() {
       severity TEXT NOT NULL,
       message TEXT NOT NULL,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      resolved INTEGER DEFAULT 0
+      resolved INTEGER DEFAULT 0,
+      source TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS alert_sms_deliveries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      alert_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      provider_message_id TEXT,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(alert_id, user_id),
+      FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS datasets (
@@ -225,6 +241,18 @@ export async function initDb() {
   // Additive migration: existing cumulative energy is preserved and interval
   // energy is derived from each meter's ordered register readings.
   const telemetryColumns = await db.all('PRAGMA table_info(telemetry)');
+  const alertColumns = await db.all('PRAGMA table_info(alerts)');
+  const userColumns = await db.all('PRAGMA table_info(users)');
+  if (!userColumns.some((column: { name: string }) => column.name === 'phone_number')) await db.exec('ALTER TABLE users ADD COLUMN phone_number TEXT');
+  if (!userColumns.some((column: { name: string }) => column.name === 'sms_alerts_enabled')) await db.exec('ALTER TABLE users ADD COLUMN sms_alerts_enabled INTEGER NOT NULL DEFAULT 0');
+  await db.exec(`CREATE TABLE IF NOT EXISTS alert_sms_deliveries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, alert_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
+    status TEXT NOT NULL, provider_message_id TEXT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(alert_id, user_id),
+    FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+  if (!alertColumns.some((column: { name: string }) => column.name === 'source')) await db.exec('ALTER TABLE alerts ADD COLUMN source TEXT');
   const ensureTelemetryColumn = async (name: string, ddl: string) => {
     if (!telemetryColumns.some((column: { name: string }) => column.name === name)) await db.exec(`ALTER TABLE telemetry ADD COLUMN ${ddl}`);
   };

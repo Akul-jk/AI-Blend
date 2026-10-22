@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { getDb } from '../db';
 import { DataSource, TelemetryReading } from '../types';
+import { notifyUsersOfHardwareAlert } from './smsAlerts';
 
 export class TelemetryValidationError extends Error {
   constructor(message: string, public statusCode = 400) { super(message); }
@@ -8,6 +9,37 @@ export class TelemetryValidationError extends Error {
 
 let telemetrySocket: Server | undefined;
 export function setTelemetryBroadcaster(io: Server) { telemetrySocket = io; }
+
+async function createTelemetryAlerts(reading: TelemetryReading & { timestamp: string }) {
+  const db = getDb();
+  const appliance = reading.appliance_id == null ? undefined : await db.get(
+    'SELECT a.name, r.rated_power FROM appliances a LEFT JOIN appliance_ratings r ON r.appliance_id = a.id WHERE a.id = ?',
+    [reading.appliance_id]
+  );
+  const candidates: Array<{ type: string; severity: 'warning' | 'critical'; message: string; value: number; expected?: number }> = [];
+  if (reading.voltage < 207 || reading.voltage > 253) {
+    candidates.push({ type: 'voltage', severity: 'critical', message: `Supply voltage is ${reading.voltage.toFixed(1)} V; the configured operating band is 207–253 V.`, value: reading.voltage, expected: 230 });
+  }
+  const ratedPower = Number(appliance?.rated_power);
+  if (Number.isFinite(ratedPower) && ratedPower > 0 && reading.power > ratedPower * 1.25 && reading.power - ratedPower > 50) {
+    candidates.push({ type: 'overload', severity: 'warning', message: `${appliance?.name || 'Appliance'} is drawing ${reading.power.toFixed(0)} W, above 125% of its ${ratedPower.toFixed(0)} W rated power.`, value: reading.power, expected: ratedPower });
+  }
+  if (reading.power >= 100 && reading.power_factor < 0.7) {
+    candidates.push({ type: 'power_factor', severity: 'warning', message: `Power factor is ${reading.power_factor.toFixed(2)} at ${reading.power.toFixed(0)} W; review the load or sensor reading.`, value: reading.power_factor, expected: 0.7 });
+  }
+  for (const candidate of candidates) {
+    const result = await db.run(`INSERT INTO alerts (sensorId, deviceId, appliance_id, type, severity, message, timestamp, resolved, source)
+      SELECT ?, ?, ?, ?, ?, ?, ?, 0, ?
+      WHERE NOT EXISTS (SELECT 1 FROM alerts WHERE type = ? AND COALESCE(appliance_id, -1) = COALESCE(?, -1) AND resolved = 0)`,
+    [reading.pzem_id || null, reading.device_id || null, reading.appliance_id ?? null, candidate.type, candidate.severity, candidate.message, reading.timestamp, reading.source, candidate.type, reading.appliance_id ?? null]);
+    if (!result.changes) continue;
+    const alert = { id: result.lastID!, sensor_id: reading.pzem_id || undefined, device_id: reading.device_id, appliance_id: reading.appliance_id ?? undefined, appliance_name: appliance?.name, type: candidate.type, severity: candidate.severity, message: candidate.message, timestamp: reading.timestamp, resolved: false, source: reading.source, actual_value: candidate.value, expected_value: candidate.expected };
+    telemetrySocket?.emit('telemetry:alert', alert);
+    void notifyUsersOfHardwareAlert({ ...alert, source: reading.source }).catch(() => {
+      console.error('SMS alert delivery could not be queued.');
+    });
+  }
+}
 
 const finiteRange = (value: unknown, min: number, max: number, field: string): number => {
   const number = Number(value);
@@ -92,5 +124,7 @@ export async function acceptTelemetry(input: TelemetryReading, io?: Server) {
     throw error;
   }
   (io || telemetrySocket)?.emit('telemetry:update', [reading]);
+  try { await createTelemetryAlerts(reading); }
+  catch (error) { console.error('Could not evaluate telemetry alerts:', error); }
   return reading;
 }

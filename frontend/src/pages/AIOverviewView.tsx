@@ -1,12 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchModelInfo } from '../services/api';
+import { fetchModelInfo, fetchRecommendations } from '../services/api';
+import type { UsageRecommendationSummary } from '../types';
 import SectionHeader from '../components/glass/SectionHeader';
 import GlassPanel from '../components/glass/GlassPanel';
 import MetricCard from '../components/glass/MetricCard';
 import StatusBadge from '../components/glass/StatusBadge';
 import LoadingState from '../components/glass/LoadingState';
-import { BrainCircuit, Activity, Database, TrendingUp } from 'lucide-react';
+import { BrainCircuit, Activity, Database, TrendingUp, Lightbulb, AlertTriangle, Radio } from 'lucide-react';
 
 const AIOverviewView: React.FC = () => {
   const { data: response, isLoading } = useQuery({
@@ -15,6 +16,12 @@ const AIOverviewView: React.FC = () => {
   });
 
   const modelInfo = response;
+  const insightsQuery = useQuery({
+    queryKey: ['energyRecommendations'],
+    queryFn: () => fetchRecommendations().then(res => res.data),
+    staleTime: 30000,
+  });
+  const insights = insightsQuery.data as UsageRecommendationSummary | undefined;
 
   if (isLoading) return <LoadingState text="Loading ML Model Info..." />;
 
@@ -106,7 +113,30 @@ const AIOverviewView: React.FC = () => {
         <div className="text-center py-12 text-slate-400">No AI model currently loaded.</div>
       )}
 
-      <GlassPanel title="AI Insights" icon={<TrendingUp className="text-violet-400" />}><div className="text-sm text-slate-500 text-center py-6">No generated insights are available.</div></GlassPanel>
+      <GlassPanel title="Energy insights" icon={<TrendingUp className="text-violet-400" />}>
+        <div className="space-y-5 p-1">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><h3 className="text-sm font-semibold text-slate-100">What the recorded usage shows</h3><p className="mt-1 text-xs text-slate-400">Explainable insights calculated from valid meter interval energy over the last 24 hours.</p></div>
+            {insights?.synthetic && <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-300/[.07] px-2.5 py-1 text-[10px] font-semibold text-cyan-100"><Radio size={12} />SIMULATED DATA</span>}
+          </div>
+          {insightsQuery.isLoading ? <p role="status" className="py-5 text-center text-sm text-slate-400">Loading measured energy insights…</p>
+            : insightsQuery.isError ? <p role="alert" className="rounded-lg border border-rose-300/15 bg-rose-300/[.05] p-4 text-sm text-rose-200">Energy insights are unavailable. Check the telemetry connection and retry later.</p>
+            : !insights ? <p className="py-5 text-center text-sm text-slate-400">No insight summary is available yet.</p>
+            : <>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400"><span>Source: <strong className="capitalize text-slate-200">{insights.source}</strong></span><span>Window: {insights.window_hours} hours</span>{insights.observed_from && insights.observed_to && <span>Observed: {new Date(insights.observed_from).toLocaleString()} – {new Date(insights.observed_to).toLocaleString()}</span>}</div>
+              {insights.unusual_usage.length > 0 ? <div className="space-y-2">{insights.unusual_usage.map(item => <div key={item.appliance_id} className="flex items-start gap-2 rounded-lg border border-amber-300/20 bg-amber-300/[.06] p-3 text-xs text-amber-100"><AlertTriangle size={15} className="mt-0.5 shrink-0" /><span><strong>{item.appliance_name}</strong> is using {item.observed_kwh_per_hour.toFixed(4)} kWh/hour versus its {item.baseline_days}-day baseline of {item.baseline_kwh_per_hour.toFixed(4)} kWh/hour ({item.ratio.toFixed(1)}×).</span></div>)}</div>
+                : <p className="rounded-lg border border-white/[.06] bg-white/[.025] p-3 text-xs leading-5 text-slate-400">{insights.unusual_usage_status}</p>}
+              <div className="space-y-3"><h4 className="text-xs font-semibold uppercase tracking-wide text-slate-300">Highest measured consumers</h4>
+                {insights.highest_consumers.length === 0 ? <p className="rounded-lg bg-white/[.025] p-4 text-center text-xs text-slate-400">No valid interval energy was recorded in this 24-hour window.</p> : insights.highest_consumers.map((item, index) => <article key={item.appliance_id} className="rounded-lg border border-white/[.06] bg-white/[.025] p-3">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2"><p className="text-sm font-semibold text-slate-100">{index + 1}. {item.appliance_name}</p><p className="font-mono text-xs text-cyan-200">{item.energy_kwh.toFixed(4)} kWh</p></div>
+                  <p className="mt-1 text-[10px] text-slate-500">{item.valid_readings} valid readings · {item.source === 'simulation' ? 'Synthetic simulation' : item.source === 'hardware' ? 'Hardware telemetry' : item.source}</p>
+                  <ul className="mt-2 space-y-1">{item.actions.map(action => <li key={action} className="flex gap-2 text-xs leading-5 text-slate-300"><Lightbulb size={13} className="mt-1 shrink-0 text-amber-300" />{action}</li>)}</ul>
+                </article>)}
+              </div>
+              <p className="text-[10px] leading-4 text-slate-500">These recommendations use deterministic rules and observed readings; they are not generated by the forecasting model. Savings are not estimated because the available data does not establish what usage can safely be reduced.</p>
+            </>}
+        </div>
+      </GlassPanel>
     </div>
   );
 };

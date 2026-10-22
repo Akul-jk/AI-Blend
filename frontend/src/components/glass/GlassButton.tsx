@@ -4,12 +4,13 @@ import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { HTMLMotionProps } from 'framer-motion';
 
-interface GlassButtonProps extends Omit<HTMLMotionProps<"button">, "disabled"> {
+interface GlassButtonProps extends Omit<HTMLMotionProps<"button">, "disabled" | "children"> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'ai';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(

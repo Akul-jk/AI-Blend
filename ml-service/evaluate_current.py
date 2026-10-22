@@ -1,6 +1,7 @@
 import os
 import json
 import numpy as np
+from datetime import datetime, timezone
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from config import MODELS_DIR, DATASETS_DIR
@@ -34,11 +35,14 @@ def evaluate_best_model():
         'mape': float(mape)
     }
 
-    metrics_path = os.path.join(MODELS_DIR, 'metrics.json')
+    evaluations_dir = os.path.join(os.path.dirname(__file__), 'evaluations')
+    os.makedirs(evaluations_dir, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    metrics_path = os.path.join(evaluations_dir, f'legacy-evaluation-{stamp}.json')
     with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=4)
 
-    print(json.dumps(metrics))
+    print(json.dumps({**metrics, 'report_file': os.path.basename(metrics_path)}))
 
 if __name__ == "__main__":
     evaluate_best_model()

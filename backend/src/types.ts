@@ -1,6 +1,7 @@
 export enum DataSource {
   SIMULATION = 'simulation',
-  HARDWARE = 'hardware'
+  HARDWARE = 'hardware',
+  REPLAY = 'replay'
 }
 
 export interface TelemetryReading {

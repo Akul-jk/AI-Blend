@@ -13,12 +13,14 @@ import applianceCategoryRoutes from './routes/appliance-categories';
 import deviceRoutes from './routes/devices';
 import telemetryRoutes from './routes/telemetry';
 import analyticsRoutes from './routes/analytics';
+import recommendationsRoutes from './routes/recommendations';
 import tariffRoutes from './routes/tariff';
 import mlRoutes from './routes/ml';
 import alertsRoutes from './routes/alerts';
 import reportsRoutes from './routes/reports';
 import settingsRoutes from './routes/settings';
 import datasetsRoutes from './routes/datasets';
+import { createSimulationRouter } from './routes/simulation';
 
 // Simulation Engine
 import { runSimulationEngine } from './simulation/engine';
@@ -28,11 +30,12 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:3000')
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000')
   .split(',').map((origin) => origin.trim()).filter(Boolean);
 export const io = new Server(server, {
   cors: { origin: allowedOrigins, methods: ['GET', 'POST'] }
 });
+app.set('io', io);
 setTelemetryBroadcaster(io);
 
 io.use((socket, next) => {
@@ -65,12 +68,14 @@ app.use('/api/v1/appliance-categories', applianceCategoryRoutes);
 app.use('/api/v1', deviceRoutes); // contains /devices, /system/status
 app.use('/api/v1/telemetry', telemetryRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/recommendations', recommendationsRoutes);
 app.use('/api/v1/tariff', tariffRoutes);
 app.use('/api/v1/ml', mlRoutes);
 app.use('/api/v1/alerts', alertsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/dataset', datasetsRoutes);
+app.use('/api/v1/simulation', createSimulationRouter(io));
 
 // Socket.IO Events
 io.on('connection', (socket) => {

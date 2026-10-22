@@ -312,6 +312,8 @@ class ModelRegistry:
             raise ModelRegistryError("Metadata feature order does not match feature_columns.json")
         if metadata.get("target_column") != "interval_energy_kwh" or metadata.get("target_unit") != "kWh":
             raise ModelRegistryError("Candidate target must be next-interval energy in kWh")
+        if metadata.get("deployment_eligible") is False:
+            raise ModelRegistryError("Candidate held-out metrics did not beat the persistence baseline; activation is blocked")
         if metadata.get("contract_id") != CONTRACT_ID:
             raise ModelRegistryError(f"Candidate must declare preprocessing contract {CONTRACT_ID}")
         if metadata.get("preprocessing") != PREPROCESSING_CONTRACT:
@@ -350,8 +352,8 @@ class ModelRegistry:
             value = metadata.get(field)
             if not isinstance(value, str) or not value or len(value) > limit:
                 raise ModelRegistryError(f"Candidate {field} must be a non-empty string of at most {limit} characters")
-        if not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", metadata["tensorflow_version"]):
-            raise ModelRegistryError("Candidate tensorflow_version must be a numeric version")
+        if not re.fullmatch(r"\d+\.\d+(?:\.\d+)?(?:[-+][A-Za-z0-9.-]+)?", metadata["tensorflow_version"]):
+            raise ModelRegistryError("Candidate tensorflow_version must be a numeric version, optionally with a pre-release/build suffix")
         created = metadata.get("created_at_utc")
         if not isinstance(created, str) or len(created) > 64:
             raise ModelRegistryError("Candidate created_at_utc is missing or malformed")

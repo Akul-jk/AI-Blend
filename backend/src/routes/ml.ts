@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import express from 'express';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { getDb } from '../db';
 import { authenticateToken, authorizeRoles } from '../auth';
 
@@ -9,6 +11,75 @@ const sendError = (res: any, message: string, error: any = {}, status = 500) => 
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
 const MODEL_UPLOAD_LIMIT = 128 * 1024 * 1024;
+const APP_MODEL_CONTRACT = 'smart-energy-19f-v1';
+
+async function readSavedCandidateEvaluation() {
+  const candidateRoot = path.resolve(__dirname, '../../../ml-service/models/candidates');
+  let entries: import('fs').Dirent[];
+  try {
+    entries = await fs.readdir(candidateRoot, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+
+  const candidates = await Promise.all(entries
+    .filter(entry => entry.isDirectory() && entry.name.startsWith('energy_lstm_app_candidate_'))
+    .map(async entry => {
+      const metadataPath = path.join(candidateRoot, entry.name, 'metadata.json');
+      try {
+        const [metadataText, fileInfo] = await Promise.all([fs.readFile(metadataPath, 'utf8'), fs.stat(metadataPath)]);
+        return { metadata: JSON.parse(metadataText), modifiedAt: fileInfo.mtimeMs };
+      } catch {
+        return null;
+      }
+    }));
+
+  let latest = candidates
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .sort((a, b) => b.modifiedAt - a.modifiedAt)
+    .find(item => item.metadata?.contract_id === APP_MODEL_CONTRACT
+      && item.metadata?.metrics?.overall?.candidate
+      && item.metadata?.metrics?.overall?.persistence_baseline);
+  if (!latest) {
+    const snapshotPath = path.resolve(__dirname, '../../../ml-service/evaluation_snapshots/app_compatible_candidate.json');
+    try {
+      const metadata = JSON.parse(await fs.readFile(snapshotPath, 'utf8'));
+      if (metadata.contract_id === APP_MODEL_CONTRACT && metadata.evaluation_only === true
+        && metadata.metrics?.overall?.candidate && metadata.metrics?.overall?.persistence_baseline) {
+        latest = { metadata, modifiedAt: 0 };
+      }
+    } catch {
+      return null;
+    }
+  }
+  if (!latest) return null;
+
+  const metadata = latest.metadata;
+  return {
+    name: 'LSTM Energy Forecaster',
+    version: null,
+    status: 'not_trained',
+    dataset_source: metadata.dataset_source || 'unknown',
+    features: metadata.feature_columns || [],
+    sequence_length: metadata.sequence_length,
+    sampling_interval: `${metadata.sampling_interval_ms}ms`,
+    training_date: null,
+    appliance_scope: 'per-appliance sequence',
+    metrics: null,
+    metadata_source: 'saved_candidate',
+    latest_candidate: {
+      version: metadata.model_version,
+      dataset_source: metadata.dataset_source || 'unknown',
+      deployment_eligible: metadata.deployment_eligible === true,
+      activation: metadata.activation,
+      metrics: metadata.metrics.overall,
+      training_data_rows: metadata.training_data_rows,
+      training_samples: metadata.training_samples,
+      validation_samples: metadata.validation_samples,
+      test_samples: metadata.test_samples,
+    },
+  };
+}
 
 async function proxyModelManagement(req: any, res: any, path: string, method = 'GET', body?: Buffer, contentType = 'application/zip') {
   const internalToken = process.env.ML_INTERNAL_TOKEN || '';
@@ -62,10 +133,13 @@ router.get('/model', authenticateToken, async (req, res) => {
   try {
     const response = await fetch(`${ML_URL}/model`);
     if (!response.ok) throw new Error('ML Service failed');
-    const data = await response.json();
+    const data: any = await response.json();
+    data.metadata_source = 'live';
     sendSuccess(res, data);
-  } catch (error) {
-    sendError(res, 'ML Service error', error);
+  } catch {
+    const savedEvaluation = await readSavedCandidateEvaluation();
+    if (savedEvaluation) return sendSuccess(res, savedEvaluation, 'Showing saved candidate evaluation; the ML service is unavailable.');
+    return sendError(res, 'ML Service error', {}, 503);
   }
 });
 

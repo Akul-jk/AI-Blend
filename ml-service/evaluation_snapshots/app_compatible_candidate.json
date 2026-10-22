@@ -1,0 +1,56 @@
+{
+  "contract_id": "smart-energy-19f-v1",
+  "model_version": "energy_lstm_app_candidate_20261016T100359609448Z_0db4cec2",
+  "dataset_source": "simulation",
+  "evaluation_only": true,
+  "created_at_utc": "2026-10-16T10:03:59.609448+00:00",
+  "sequence_length": 60,
+  "sampling_interval_ms": 5000,
+  "feature_columns": [
+    "voltage",
+    "current",
+    "power",
+    "energy",
+    "frequency",
+    "power_factor",
+    "hour_sin",
+    "hour_cos",
+    "day_sin",
+    "day_cos",
+    "month_sin",
+    "month_cos",
+    "is_weekend",
+    "energy_lag_1",
+    "energy_lag_2",
+    "energy_lag_3",
+    "power_lag_1",
+    "power_lag_2",
+    "power_lag_3"
+  ],
+  "training_data_rows": 12474,
+  "training_samples": 5278,
+  "validation_samples": 1036,
+  "test_samples": 1036,
+  "deployment_eligible": false,
+  "activation": "not eligible: held-out MAE must beat the persistence baseline",
+  "metrics": {
+    "overall": {
+      "candidate": {
+        "mae_kwh": 0.0001006296482918823,
+        "rmse_kwh": 0.00030000117351316335,
+        "r2": 0.45972910129640643,
+        "wape_percent": 71.17948129515652,
+        "samples": 1036
+      },
+      "persistence_baseline": {
+        "mae_kwh": 0.00008930115908362274,
+        "rmse_kwh": 0.00031814259934496807,
+        "r2": 0.39241181748992005,
+        "wape_percent": 63.16637581989132,
+        "samples": 1036
+      },
+      "mae_improvement_vs_persistence_percent": -12.685713516496921
+    }
+  },
+  "note": "Read-only evaluation metadata snapshot. Candidate weights and scalers are not included by this file. Metrics are from synthetic data and do not establish physical meter performance."
+}

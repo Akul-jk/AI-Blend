@@ -7,12 +7,15 @@ import { useAppStore } from '../../stores/appStore';
 import { socketService } from '../../services/socket';
 import { useTelemetryStore } from '../../stores/telemetryStore';
 import { useAlertStore } from '../../stores/alertStore';
+import { useReplayStore } from '../../stores/replayStore';
 import type { TelemetryReading } from '../../types';
 import type { Alert } from '../../types';
 
 const AppShell: React.FC = () => {
   const { sidebarCollapsed } = useAppStore();
   const { setLatestReadings, addReadings, setSocketConnected } = useTelemetryStore();
+  const addReplayReadings = useReplayStore(state => state.addReadings);
+  const clearReplayReadings = useReplayStore(state => state.clear);
   const addAlert = useAlertStore(state => state.addAlert);
 
   useEffect(() => {
@@ -29,9 +32,13 @@ const AppShell: React.FC = () => {
     const offUpdate = socketService.on('telemetry:update', (readings: TelemetryReading[]) => {
       if (Array.isArray(readings)) addReadings(readings);
     });
+    const offReplay = socketService.on('telemetry:replay', (readings: TelemetryReading[]) => {
+      if (Array.isArray(readings)) addReplayReadings(readings);
+    });
+    const offReplayReset = socketService.on('telemetry:replay:reset', () => clearReplayReadings());
     const offAlert = socketService.on('telemetry:alert', (alert: Alert) => addAlert(alert));
-    return () => { offStatus(); offInit(); offUpdate(); offAlert(); socketService.disconnect(); setSocketConnected(false); };
-  }, [addAlert, addReadings, setLatestReadings, setSocketConnected]);
+    return () => { offStatus(); offInit(); offUpdate(); offReplay(); offReplayReset(); offAlert(); socketService.disconnect(); setSocketConnected(false); };
+  }, [addAlert, addReadings, addReplayReadings, clearReplayReadings, setLatestReadings, setSocketConnected]);
 
   return (
     <div className="relative flex min-h-screen overflow-hidden font-sans text-[var(--text-primary)]">

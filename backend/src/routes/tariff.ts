@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getDb } from '../db';
 import { authenticateToken, authorizeRoles } from '../auth';
+import { calculateSourcedKsebBill } from '../services/ksebTariff';
 
 const router = Router();
 const sendSuccess = (res: any, data: any, message = 'Success', status = 200) => res.status(status).json({ success: true, message, data });
@@ -135,9 +136,24 @@ router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 // POST /api/v1/tariff/calculate - Calculate bill for given consumption
 router.post('/calculate', authenticateToken, async (req, res) => {
   try {
-    const { consumption, green_enabled, phase_type } = req.body;
+    const { consumption, green_enabled, phase_type, profile, fuel_surcharge_per_unit, meter_rent, green_charge_per_unit } = req.body;
     if (consumption === undefined || !Number.isFinite(Number(consumption)) || Number(consumption) < 0) {
       return sendError(res, 'Valid consumption value required', {}, 400);
+    }
+    if (profile !== undefined && !['configured', 'kseb_lt1_sourced'].includes(profile)) {
+      return sendError(res, 'Unknown tariff profile', {}, 400);
+    }
+    if (profile === 'kseb_lt1_sourced') {
+      try {
+        return sendSuccess(res, calculateSourcedKsebBill(Number(consumption), {
+          phase_type,
+          fuel_surcharge_per_unit,
+          meter_rent,
+          green_charge_per_unit: green_enabled ? (green_charge_per_unit ?? 0.77) : 0,
+        }));
+      } catch (error) {
+        return sendError(res, error instanceof Error ? error.message : 'Invalid sourced tariff options', {}, 400);
+      }
     }
     const db = getDb();
     const result = await calculateBill(parseFloat(consumption), db, { green_enabled, phase_type });

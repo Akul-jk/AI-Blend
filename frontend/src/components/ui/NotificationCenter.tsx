@@ -3,18 +3,20 @@ import { Bell, AlertOctagon, CheckCircle2, WifiOff } from 'lucide-react';
 import { useAlertStore } from '../../stores/alertStore';
 import { useSensorStore } from '../../stores/sensorStore';
 import { toast } from './Toast';
+import { fetchAlerts, resolveAlert as resolveAlertRequest } from '../../services/api';
 
 export const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { alerts, resolveAlert } = useAlertStore();
+  const { alerts, setAlerts, resolveAlert } = useAlertStore();
   const { socketConnected } = useSensorStore();
 
   const activeAlerts = alerts.filter(a => !a.resolved);
   const unreadCount = activeAlerts.length;
 
   useEffect(() => {
+    fetchAlerts().then(response => setAlerts(response.data)).catch(() => {});
     // Click outside handler
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -23,14 +25,17 @@ export const NotificationCenter: React.FC = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [setAlerts]);
 
-  const handleResolveAll = () => {
-    activeAlerts.forEach(a => {
-      resolveAlert(a.id);
-    });
-    toast.success('All notifications marked as resolved.');
-    setIsOpen(false);
+  const handleResolveAll = async () => {
+    try {
+      await Promise.all(activeAlerts.map(alert => resolveAlertRequest(alert.id)));
+      activeAlerts.forEach(alert => resolveAlert(alert.id));
+      toast.success('All notifications marked as resolved.');
+      setIsOpen(false);
+    } catch {
+      toast.error('Some notifications could not be resolved. Open Alert Center to retry.');
+    }
   };
 
   return (
@@ -114,8 +119,7 @@ export const NotificationCenter: React.FC = () => {
                       {!a.resolved && (
                         <button
                           onClick={() => {
-                            resolveAlert(a.id);
-                            toast.success('Alert resolved.');
+                            resolveAlertRequest(a.id).then(() => { resolveAlert(a.id); toast.success('Alert resolved.'); }).catch(() => toast.error('Alert could not be resolved. Please retry.'));
                           }}
                           className="text-[9px] text-emerald-400 hover:underline font-medium"
                         >

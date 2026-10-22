@@ -23,6 +23,7 @@ const ApplianceDetailView: React.FC = () => {
   const appliance = response;
   const { latestReadings, history } = useTelemetryStore();
   const liveTelemetry = id ? latestReadings[id] : null;
+  const telemetrySource = liveTelemetry?.source || appliance?.latest_telemetry?.source;
   const chartData = id ? (history[id] || []).map(r => ({
     time: new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     power: r.power,
@@ -44,6 +45,7 @@ const ApplianceDetailView: React.FC = () => {
           <p className="text-slate-400 text-sm">
             {appliance.manufacturer} {appliance.model} • Location: {appliance.location}
           </p>
+          {telemetrySource && <p className="mt-2 text-xs text-amber-200">{telemetrySource === 'simulation' ? 'Synthetic simulator readings' : 'Connected hardware readings'} · source shown with every measurement</p>}
         </div>
       </div>
 

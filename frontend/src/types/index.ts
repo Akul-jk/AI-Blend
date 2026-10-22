@@ -3,7 +3,7 @@
 // ============================================================
 
 // ---- Data Source ----
-export type DataSourceMode = 'simulation' | 'hardware';
+export type DataSourceMode = 'simulation' | 'hardware' | 'replay';
 export type ModelSourceMode = 'simulation' | 'hardware';
 
 // ---- Telemetry Contract (matches backend + ML service) ----
@@ -24,6 +24,19 @@ export interface TelemetryReading {
   source: DataSourceMode;
   device_id?: string;
   circuit_id?: string;
+}
+
+export interface ReplayStatus {
+  state: 'idle' | 'running' | 'paused' | 'completed';
+  speed: number;
+  cursor: number;
+  row_count: number;
+  appliance_count: number;
+  coverage_start: string | null;
+  coverage_end: string | null;
+  median_interval_seconds: number | null;
+  source: 'replay';
+  persistent: false;
 }
 
 // ---- Appliance ----
@@ -123,8 +136,24 @@ export interface MLModelInfo {
   sampling_interval: string;
   training_date: string;
   status: 'trained' | 'training' | 'failed' | 'not_trained';
+  metadata_source?: 'live' | 'saved_candidate';
   metrics?: MLMetrics;
   appliance_scope: string;
+  latest_candidate?: {
+    version: string;
+    dataset_source: string;
+    deployment_eligible: boolean;
+    activation: string;
+    training_data_rows: number;
+    training_samples?: number;
+    validation_samples?: number;
+    test_samples: number;
+    metrics?: {
+      candidate?: { mae_kwh: number; rmse_kwh: number; r2: number; wape_percent: number; samples: number };
+      persistence_baseline?: { mae_kwh: number; rmse_kwh: number; r2: number; wape_percent: number; samples: number };
+      mae_improvement_vs_persistence_percent?: number;
+    };
+  } | null;
 }
 
 export interface MLMetrics {
@@ -171,7 +200,7 @@ export interface Anomaly {
 }
 
 // ---- Tariff / Billing ----
-export type TariffMode = 'LT_I_TELESCOPIC' | 'NON_TELESCOPIC_FLAT';
+export type TariffMode = 'LT_I_TELESCOPIC' | 'NON_TELESCOPIC_FLAT' | 'LT_I_NON_TELESCOPIC_FLAT';
 export type PhaseType = 'single' | 'three';
 
 export interface TariffSlab {
@@ -214,14 +243,21 @@ export interface BillBreakdown {
   electricity_duty: number;
   total: number;
   currency: string;
-  data_source: DataSourceMode;
-  tariff_version: number;
+  data_source?: DataSourceMode;
+  tariff_version?: number;
+  profile?: string;
+  source?: string;
+  order?: string;
+  effective_period?: string;
+  duty_rate?: number;
+  assumptions?: string[];
+  slabs_breakdown?: Array<{ range: string; units: number; rate: number; charge: number }>;
 }
 
 // ---- Alerts ----
 export interface Alert {
   id: number;
-  appliance_id?: string;
+  appliance_id?: number;
   appliance_name?: string;
   sensor_id?: string;
   device_id?: string;
@@ -230,6 +266,7 @@ export interface Alert {
   message: string;
   timestamp: string;
   resolved: boolean;
+  source?: 'hardware' | 'simulation' | 'replay' | string;
   actual_value?: number;
   expected_value?: number;
   deviation?: number;
@@ -257,6 +294,37 @@ export interface ApplianceBreakdown {
   energy: number;
   percentage: number;
   power: number;
+}
+
+export interface ApplianceRecommendation {
+  appliance_id: number;
+  appliance_name: string;
+  category: string;
+  energy_kwh: number;
+  valid_readings: number;
+  observed_from: string | null;
+  observed_to: string | null;
+  average_power_w: number | null;
+  source: DataSourceMode | 'mixed' | 'unknown';
+  actions: string[];
+}
+
+export interface UsageRecommendationSummary {
+  window_hours: 24;
+  observed_from: string | null;
+  observed_to: string | null;
+  source: DataSourceMode | 'mixed' | 'unknown';
+  synthetic: boolean;
+  highest_consumers: ApplianceRecommendation[];
+  unusual_usage: Array<{
+    appliance_id: number;
+    appliance_name: string;
+    observed_kwh_per_hour: number;
+    baseline_kwh_per_hour: number;
+    ratio: number;
+    baseline_days: number;
+  }>;
+  unusual_usage_status: string;
 }
 
 export interface EnergyTrend {

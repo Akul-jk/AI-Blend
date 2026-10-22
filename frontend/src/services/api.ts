@@ -3,7 +3,7 @@ import type {
   Appliance, ApplianceWithDetails, ApplianceCategory,
   TelemetryReading, DashboardSummary, ApplianceBreakdown, EnergyTrend,
   Alert, SystemStatus, DatasetInfo, MLModelInfo, MLMetrics, MLPrediction,
-  BillBreakdown, Esp32Device, PzemDevice
+  BillBreakdown, Esp32Device, PzemDevice, ReplayStatus, UsageRecommendationSummary
 } from '../types';
 
 const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1`;
@@ -60,16 +60,25 @@ export const fetchTelemetryHistory = (params?: { appliance_id?: string; from?: s
   api.get<TelemetryReading[]>('/telemetry/history', { params });
 export const fetchTelemetryTotals = () => api.get('/telemetry/totals');
 
+// ---- Read-only synthetic dataset replay ----
+export const fetchReplayStatus = () => api.get<ReplayStatus>('/simulation/replay');
+export const startReplay = () => api.post<ReplayStatus>('/simulation/replay/start');
+export const pauseReplay = () => api.post<ReplayStatus>('/simulation/replay/pause');
+export const resumeReplay = () => api.post<ReplayStatus>('/simulation/replay/resume');
+export const restartReplay = () => api.post<ReplayStatus>('/simulation/replay/restart');
+export const setReplaySpeed = (speed: number) => api.put<ReplayStatus>('/simulation/replay/speed', { speed });
+
 // ---- Analytics ----
 export const fetchAnalyticsSummary = () => api.get<DashboardSummary>('/analytics/summary');
 export const fetchAnalyticsBreakdown = () => api.get<ApplianceBreakdown[]>('/analytics/breakdown');
 export const fetchAnalyticsTrends = (period: string = 'daily') => api.get<EnergyTrend[]>(`/analytics/trends?period=${period}`);
+export const fetchRecommendations = () => api.get<UsageRecommendationSummary>('/recommendations');
 export const fetchBillingUsage = () => api.get<{ consumption: number; period_start: string }>('/analytics/billing-usage');
 
 // ---- Tariff / Billing ----
 export const fetchTariff = () => api.get('/tariff');
 export const updateTariff = (id: number, data: any) => api.put(`/tariff/${id}`, data);
-export const calculateBill = (consumption: number, options?: { green_enabled?: boolean; phase_type?: string }) =>
+export const calculateBill = (consumption: number, options?: { green_enabled?: boolean; phase_type?: string; profile?: 'kseb_lt1_sourced' | 'configured'; fuel_surcharge_per_unit?: number; meter_rent?: number; green_charge_per_unit?: number }) =>
   api.post<BillBreakdown>('/tariff/calculate', { consumption, ...options });
 export const previewBill = (consumption: number, greenEnabled?: boolean, phaseType?: string) =>
   api.get(`/tariff/preview?consumption=${consumption}&green_enabled=${greenEnabled || false}&phase_type=${phaseType || 'single'}`);
@@ -143,6 +152,15 @@ export const generateDataset = () => api.post('/ml/dataset/generate');
 export const fetchAlerts = () => api.get<Alert[]>('/alerts');
 export const resolveAlert = (id: number) => api.put(`/alerts/${id}`, { resolved: 1 });
 export const deleteAlert = (id: number) => api.delete(`/alerts/${id}`);
+export interface PhoneAlertPreferences {
+  phone_number: string;
+  sms_alerts_enabled: boolean;
+  sms_configured: boolean;
+  sms_scope: string;
+}
+export const fetchPhoneAlertPreferences = () => api.get<PhoneAlertPreferences>('/settings/notifications');
+export const savePhoneAlertPreferences = (settings: Pick<PhoneAlertPreferences, 'phone_number' | 'sms_alerts_enabled'>) =>
+  api.put<PhoneAlertPreferences>('/settings/notifications', settings);
 
 // ---- Devices ----
 export const fetchEsp32Devices = () => api.get<Esp32Device[]>('/esp32-devices');

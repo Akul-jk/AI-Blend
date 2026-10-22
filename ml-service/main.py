@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-from config import SEQUENCE_LENGTH, FEATURE_COLUMNS, SAMPLING_INTERVAL_SECONDS, SAMPLING_INTERVAL_MS, FORECAST_HORIZON_INTERVALS, TARGET
+from config import SEQUENCE_LENGTH, FEATURE_COLUMNS, SAMPLING_INTERVAL_SECONDS, SAMPLING_INTERVAL_MS, FORECAST_HORIZON_INTERVALS, TARGET, MODEL_CANDIDATES_DIR
 from simulation import generate_dataset
 from lstm_model import train_model
 from anomaly import detect_anomalies
@@ -102,14 +102,21 @@ def health():
     return {"status": "healthy"}
 
 @app.post("/dataset/generate")
-def generate_data(background_tasks: BackgroundTasks):
-    background_tasks.add_task(generate_dataset)
-    return {"message": "Dataset generation started in background."}
+def generate_data():
+    try:
+        dataset_path = generate_dataset()
+        return {"message": "Dataset export completed. The existing canonical dataset was left unchanged.", "dataset": Path(dataset_path).name}
+    except FileNotFoundError as exc:
+        raise HTTPException(404, "Telemetry database is unavailable for export.") from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, "Dataset export failed.") from exc
 
 @app.post("/train")
 def train(background_tasks: BackgroundTasks):
     background_tasks.add_task(train_model)
-    return {"message": "Model training started in background."}
+    return {"message": "Isolated candidate training started. Active and legacy models are unchanged."}
 
 @app.post("/predict")
 def predict(req: PredictRequest):
@@ -157,7 +164,7 @@ def predict(req: PredictRequest):
         pred_unscaled = float(np.clip(pred_unscaled, a_min=0, a_max=None))
 
         return {
-            "source": "package" if active_record.get("source") == "package" else metadata.get('source', 'simulation'),
+            "source": metadata.get("dataset_source", metadata.get('source', 'simulation')),
             "model": "energy_lstm",
             "model_version": metadata['model_version'],
             "appliance_id": req.appliance_id,
@@ -181,10 +188,31 @@ def evaluate():
 
 @app.get("/model")
 def get_model():
+    latest_candidate = None
+    candidate_dirs = sorted(Path(MODEL_CANDIDATES_DIR).glob("energy_lstm_app_candidate_*/metadata.json"), key=lambda p: p.stat().st_mtime)
+    for candidate_metadata_path in reversed(candidate_dirs):
+        try:
+            candidate_metadata = json.loads(candidate_metadata_path.read_text(encoding="utf-8"))
+            if candidate_metadata.get("contract_id") != "smart-energy-19f-v1":
+                continue
+            latest_candidate = {
+                "version": candidate_metadata.get("model_version"),
+                "dataset_source": candidate_metadata.get("dataset_source", "unknown"),
+                "deployment_eligible": candidate_metadata.get("deployment_eligible") is True,
+                "activation": candidate_metadata.get("activation"),
+                "metrics": candidate_metadata.get("metrics", {}).get("overall"),
+                "training_data_rows": candidate_metadata.get("training_data_rows"),
+                "training_samples": candidate_metadata.get("training_samples"),
+                "validation_samples": candidate_metadata.get("validation_samples"),
+                "test_samples": candidate_metadata.get("test_samples"),
+            }
+            break
+        except (OSError, json.JSONDecodeError):
+            continue
     try:
         artifacts = default_registry().active_artifacts()
     except (ModelRegistryError, FileNotFoundError):
-        return {"name": "LSTM Energy Forecaster", "version": None, "status": "not_trained", "dataset_source": "simulation", "features": FEATURE_COLUMNS, "sequence_length": SEQUENCE_LENGTH, "sampling_interval": f"{SAMPLING_INTERVAL_MS}ms", "training_date": None, "appliance_scope": "per-appliance sequence", "metrics": None}
+        return {"name": "LSTM Energy Forecaster", "version": None, "status": "not_trained", "dataset_source": "simulation", "features": FEATURE_COLUMNS, "sequence_length": SEQUENCE_LENGTH, "sampling_interval": f"{SAMPLING_INTERVAL_MS}ms", "training_date": None, "appliance_scope": "per-appliance sequence", "metrics": None, "latest_candidate": latest_candidate}
     metadata = json.loads(artifacts['metadata'].read_text(encoding='utf-8'))
     metrics = artifacts['record'].get('evaluation_metrics')
     if metrics is None and 'metrics' in artifacts['record'].get('files', {}):
@@ -192,7 +220,7 @@ def get_model():
         if metric_path.is_file():
             metrics = json.loads(metric_path.read_text(encoding='utf-8'))
     package_source = artifacts['record'].get('source') == 'package'
-    return {"name": "LSTM Energy Forecaster", "version": metadata['model_version'], "status": "trained", "active_version": artifacts['version'], "dataset_source": metadata.get('training_data') if package_source else metadata.get('source', 'simulation'), "features": metadata.get('feature_columns', metadata.get('feature_order', FEATURE_COLUMNS)), "sequence_length": metadata['sequence_length'], "sampling_interval": f"{metadata.get('sampling_interval_ms', SAMPLING_INTERVAL_MS)}ms", "forecast_horizon_seconds": metadata.get('forecast_horizon_seconds'), "target": metadata.get('target_column', metadata.get('target', TARGET)), "training_date": metadata.get('training_timestamp', metadata.get('created_at_utc')), "appliance_scope": metadata.get('appliance_scope', 'per-appliance sequence'), "metrics": metrics}
+    return {"name": "LSTM Energy Forecaster", "version": metadata['model_version'], "status": "trained", "active_version": artifacts['version'], "dataset_source": metadata.get('dataset_source', metadata.get('source', 'simulation')), "features": metadata.get('feature_columns', metadata.get('feature_order', FEATURE_COLUMNS)), "sequence_length": metadata['sequence_length'], "sampling_interval": f"{metadata.get('sampling_interval_ms', SAMPLING_INTERVAL_MS)}ms", "forecast_horizon_seconds": metadata.get('forecast_horizon_seconds'), "target": metadata.get('target_column', metadata.get('target', TARGET)), "training_date": metadata.get('training_timestamp', metadata.get('created_at_utc')), "appliance_scope": metadata.get('appliance_scope', 'per-appliance sequence'), "metrics": metrics, "latest_candidate": latest_candidate}
 
 @app.get("/metrics")
 def get_metrics():

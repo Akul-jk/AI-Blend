@@ -74,7 +74,7 @@ const DashboardView: React.FC = () => {
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-200/80">A clear view of current energy use, recent telemetry, and the systems shaping it.</p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-2 text-xs text-white"><span className={`h-2 w-2 rounded-full ${socketConnected ? 'bg-[#36D399]' : 'bg-amber-300'}`} />{socketConnected ? 'Live connection' : 'Connection unavailable'}</span>
-            {source && <span className="rounded-full border border-white/15 bg-black/20 px-3 py-2 text-xs text-white">{source === 'hardware' ? 'Hardware telemetry' : 'Simulation data'}</span>}
+            {source && <span className="rounded-full border border-white/15 bg-black/20 px-3 py-2 text-xs text-white">{source === 'hardware' ? 'Hardware telemetry' : 'Synthetic simulator data'}</span>}
             {newest && <span className="text-xs text-slate-200/70">Updated {new Date(newest.timestamp).toLocaleTimeString()}</span>}
           </div>
         </div>
@@ -124,7 +124,7 @@ const DashboardView: React.FC = () => {
         </GlassPanel>
       </div>
     </section>
-    <p className="flex items-center justify-center gap-2 pb-2 text-center text-[11px] text-[var(--text-muted)]"><Leaf size={13} />Telemetry source: {source === 'hardware' ? 'connected hardware' : source === 'simulation' ? 'simulation' : 'not established'}{stale && newest && <span className="text-[var(--warning)]"> · latest reading is stale</span>}<CircleHelp size={13} aria-label="Current readings can be delayed if the telemetry connection is unavailable." /></p>
+    <p className="flex items-center justify-center gap-2 pb-2 text-center text-[11px] text-[var(--text-muted)]"><Leaf size={13} />Telemetry source: {source === 'hardware' ? 'connected hardware' : source === 'simulation' ? 'synthetic simulator' : 'not established'}{stale && newest && <span className="text-[var(--warning)]"> · latest reading is stale</span>}<CircleHelp size={13} aria-label="Current readings can be delayed if the telemetry connection is unavailable." /></p>
   </div>;
 };
 

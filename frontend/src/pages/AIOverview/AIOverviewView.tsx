@@ -1,3 +1,4 @@
+// Legacy visual prototype, not routed by App.tsx; its fallback metrics are mock values.
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { toast } from '../../components/ui/Toast';

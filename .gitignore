@@ -15,6 +15,7 @@ venv/
 env/
 **/.venv/
 **/venv/
+**/.python312/
 
 # Python cache
 __pycache__/
@@ -52,11 +53,17 @@ logs/
 # IDE / OS
 .vscode/
 .idea/
+.vite/
+.pptx-build/
 .DS_Store
 Thumbs.db
 
 # ML generated/legacy artifacts
 ml-service/datasets/simulation/synthetic_telemetry.csv
+ml-service/datasets/exports/
+ml-service/datasets/external/
 ml-service/models/simulation/lstm_model.keras
 ml-service/models/simulation/scaler.pkl
 ml-service/models/managed/
+ml-service/models/candidates/
+ml-service/evaluations/

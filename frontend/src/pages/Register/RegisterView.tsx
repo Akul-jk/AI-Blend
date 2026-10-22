@@ -19,6 +19,9 @@ export const RegisterView: React.FC = () => {
     if (password !== confirmPassword) {
       return toast.error('Passwords do not match.');
     }
+    if (password.length < 10) {
+      return toast.error('Password must contain at least 10 characters.');
+    }
 
     setSubmitting(true);
     try {
@@ -93,10 +96,12 @@ export const RegisterView: React.FC = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                minLength={10}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-800 focus:border-emerald-500/50 rounded-xl text-slate-200 text-sm focus:outline-none transition-colors"
                 placeholder="Create password"
               />
             </div>
+            <p className="mt-1.5 pl-1 text-xs text-slate-500">Use at least 10 characters.</p>
           </div>
 
           <div>

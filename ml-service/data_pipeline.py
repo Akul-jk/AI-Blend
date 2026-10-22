@@ -3,8 +3,9 @@ import numpy as np
 import os
 import json
 import joblib
+import tempfile
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from config import SEQUENCE_LENGTH, N_FEATURES, FEATURE_COLUMNS, TARGET, MODELS_DIR, SAMPLING_INTERVAL_SECONDS
+from config import SEQUENCE_LENGTH, N_FEATURES, FEATURE_COLUMNS, TARGET, SAMPLING_INTERVAL_SECONDS
 
 def preprocess_data(df, is_training=True, scaler_path=None, target_scaler_path=None):
     df = df.copy()
@@ -58,10 +59,8 @@ def preprocess_data(df, is_training=True, scaler_path=None, target_scaler_path=N
     features_df = df[FEATURE_COLUMNS]
     target_series = df[['energy_interval']]
 
-    if scaler_path is None:
-        scaler_path = os.path.join(MODELS_DIR, 'scaler.save')
-    if target_scaler_path is None:
-        target_scaler_path = os.path.join(MODELS_DIR, 'target_scaler.save')
+    if scaler_path is None or target_scaler_path is None:
+        raise ValueError('Explicit input and target scaler paths are required; legacy model paths are read-only')
 
     if is_training:
         scaler = StandardScaler()
@@ -106,7 +105,15 @@ def create_sequences(features, target, seq_length=SEQUENCE_LENGTH):
         y.append(target[i + seq_length])
     return np.array(X), np.array(y)
 
-def prepare_datasets(csv_path):
+def prepare_datasets(csv_path, models_dir=None):
+    if models_dir is None:
+        # Evaluation-only callers receive temporary scalers instead of writing
+        # into the checked-in legacy model directory.
+        with tempfile.TemporaryDirectory(prefix='energy-dataset-scalers-') as temporary_dir:
+            return _prepare_datasets(csv_path, temporary_dir)
+    return _prepare_datasets(csv_path, models_dir)
+
+def _prepare_datasets(csv_path, models_dir):
     df = pd.read_csv(csv_path)
     df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed', utc=True)
     df = df.sort_values(by=['appliance_id', 'timestamp'])
@@ -131,10 +138,12 @@ def prepare_datasets(csv_path):
 
     if 'interval_energy_kwh' not in df.columns:
         raise ValueError('Dataset must contain canonical interval_energy_kwh targets')
-    os.makedirs(MODELS_DIR, exist_ok=True)
-    X_train_raw, y_train_raw, _ = preprocess_data(train_df, is_training=True)
-    X_val_raw, y_val_raw, _ = preprocess_data(val_df, is_training=False)
-    X_test_raw, y_test_raw, _ = preprocess_data(test_df, is_training=False)
+    os.makedirs(models_dir, exist_ok=True)
+    scaler_path = os.path.join(models_dir, 'scaler.save')
+    target_scaler_path = os.path.join(models_dir, 'target_scaler.save')
+    X_train_raw, y_train_raw, _ = preprocess_data(train_df, is_training=True, scaler_path=scaler_path, target_scaler_path=target_scaler_path)
+    X_val_raw, y_val_raw, _ = preprocess_data(val_df, is_training=False, scaler_path=scaler_path, target_scaler_path=target_scaler_path)
+    X_test_raw, y_test_raw, _ = preprocess_data(test_df, is_training=False, scaler_path=scaler_path, target_scaler_path=target_scaler_path)
 
     X_train, y_train = create_sequences(X_train_raw, y_train_raw)
     X_val, y_val = create_sequences(X_val_raw, y_val_raw)
